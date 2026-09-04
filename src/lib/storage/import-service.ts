@@ -1,4 +1,6 @@
 import { db, type MissingProfilePolicy, type StarshiyBratDatabase } from '../../db/schema';
+import type { Profile } from '../../types/profile';
+import { CLASSIFICATION_VERSION, classifyProfiles } from '../classification';
 import {
   TELEGRAM_PARSER_VERSION,
   parseTelegramExport,
@@ -31,6 +33,7 @@ export interface ImportTelegramOptions {
 
 export interface ImportTelegramResult {
   parsed: TelegramParseResult;
+  profiles: Profile[];
   stats: ImportProfilesStats;
 }
 
@@ -55,21 +58,23 @@ export async function importTelegramHtml(
     );
   }
 
+  const profiles = classifyProfiles(parsed.profiles);
   const stats = await importProfilesTransactionally(
     {
-      profiles: parsed.profiles,
+      profiles,
       sourceName: options.sourceName,
       sourceSize: options.sourceSize,
       sourceLastModified: options.sourceLastModified,
       parsedMessageCount: parsed.messages.length,
       parserVersion: TELEGRAM_PARSER_VERSION,
+      classificationVersion: CLASSIFICATION_VERSION,
       importedAt: options.importedAt,
       missingProfilePolicy: options.missingProfilePolicy,
     },
     database,
   );
 
-  return { parsed, stats };
+  return { parsed, profiles, stats };
 }
 
 export async function importTelegramFile(
