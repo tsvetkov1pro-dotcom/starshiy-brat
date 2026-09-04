@@ -103,6 +103,8 @@ export function HomePage() {
         onChange={setQuery}
         onSearch={search}
         className="search-bridge"
+        style={{ width: 'min(820px, calc(100% - 24px))' }}
+        barStyle={{ minHeight: 52 }}
         placeholder="Кого ищешь? Например: IT, продажи, стройка…"
       />
 
@@ -185,7 +187,7 @@ export function HomePage() {
           ))}</div> : <p className="muted favorites-empty">Нажми на звезду в карточке — сохранённые братья появятся здесь.</p>}
         </section>
 
-        <section className="insight-grid">
+        <section className="insight-grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))' }}>
           <article className="panel domains-panel">
             <div className="section-heading"><h2>Сферы сообщества</h2><Link to="/domains">Смотреть все <ArrowRight size={15} /></Link></div>
             <div className="domain-grid-v1">
