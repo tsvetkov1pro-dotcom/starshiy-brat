@@ -27,14 +27,13 @@ function normalizeSpace(value: string): string {
 function normalizeEmojiDigits(value: string): string {
   let result = value;
   for (const [emoji, digit] of Object.entries(EMOJI_DIGITS)) {
-    result = result.split(emoji).join(digit);
+    result = result.replaceAll(emoji, digit);
   }
   return result;
 }
 
 function extractTextPreservingBreaks(root: Element | null): string {
   if (!root) return '';
-
   const chunks: string[] = [];
   const blockTags = new Set(['DIV', 'P', 'BLOCKQUOTE', 'LI']);
 
@@ -43,23 +42,18 @@ function extractTextPreservingBreaks(root: Element | null): string {
       chunks.push(node.nodeValue ?? '');
       return;
     }
-
     if (node.nodeType !== 1) return;
-    const element = node as Element;
 
+    const element = node as Element;
     if (element.tagName === 'BR') {
       chunks.push('\n');
       return;
     }
 
-    const isBlock = blockTags.has(element.tagName);
-    if (isBlock && chunks.length > 0 && !chunks[chunks.length - 1]?.endsWith('\n')) {
-      chunks.push('\n');
-    }
-
+    const block = blockTags.has(element.tagName);
+    if (block && chunks.length && !chunks.at(-1)?.endsWith('\n')) chunks.push('\n');
     for (const child of Array.from(element.childNodes)) walk(child);
-
-    if (isBlock && !chunks[chunks.length - 1]?.endsWith('\n')) chunks.push('\n');
+    if (block && !chunks.at(-1)?.endsWith('\n')) chunks.push('\n');
   };
 
   for (const child of Array.from(root.childNodes)) walk(child);
@@ -67,7 +61,7 @@ function extractTextPreservingBreaks(root: Element | null): string {
   return chunks
     .join('')
     .split('\n')
-    .map((line) => normalizeSpace(line))
+    .map(normalizeSpace)
     .join('\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
@@ -77,9 +71,8 @@ function telegramUsernameFromHref(href: string): string | undefined {
   try {
     const url = new URL(href);
     if (!TELEGRAM_HOSTS.has(url.hostname.toLowerCase())) return undefined;
-    const segment = url.pathname.split('/').filter(Boolean)[0];
-    if (!segment || !/^[A-Za-z0-9_]{5,32}$/.test(segment)) return undefined;
-    return segment;
+    const username = url.pathname.split('/').filter(Boolean)[0];
+    return username && /^[A-Za-z0-9_]{5,32}$/.test(username) ? username : undefined;
   } catch {
     return undefined;
   }
@@ -87,23 +80,25 @@ function telegramUsernameFromHref(href: string): string | undefined {
 
 function extractLinks(textElement: Element | null): TelegramLink[] {
   if (!textElement) return [];
-  return Array.from(textElement.querySelectorAll('a[href]'))
-    .map((anchor) => {
-      const href = anchor.getAttribute('href')?.trim() ?? '';
-      if (!href) return undefined;
-      return {
-        href,
-        text: normalizeSpace(anchor.textContent ?? ''),
-        username: telegramUsernameFromHref(href),
-      } satisfies TelegramLink;
-    })
-    .filter((link): link is TelegramLink => Boolean(link));
+  const links: TelegramLink[] = [];
+
+  for (const anchor of Array.from(textElement.querySelectorAll<HTMLAnchorElement>('a[href]'))) {
+    const href = anchor.getAttribute('href')?.trim();
+    if (!href) continue;
+    const username = telegramUsernameFromHref(href);
+    links.push({
+      href,
+      text: normalizeSpace(anchor.textContent ?? ''),
+      ...(username ? { username } : {}),
+    });
+  }
+
+  return links;
 }
 
 function hasSelfContactContext(anchor: HTMLAnchorElement): boolean {
   const parent = anchor.parentElement;
   if (!parent) return false;
-
   const siblings = Array.from(parent.childNodes);
   const index = siblings.indexOf(anchor);
   const nearby = siblings
@@ -112,24 +107,18 @@ function hasSelfContactContext(anchor: HTMLAnchorElement): boolean {
     .join(' ')
     .toLowerCase();
 
-  return /(мой\s+(?:тг|телеграм|telegram)|для\s+связи|связаться\s+со\s+мной|пишите\s+мне|написать\s+мне|мой\s+аккаунт)/i.test(
-    nearby,
-  );
+  return /(мой\s+(?:тг|телеграм|telegram)|для\s+связи|связаться\s+со\s+мной|пишите\s+мне|написать\s+мне|мой\s+аккаунт)/i.test(nearby);
 }
 
 function resolveAuthorUsername(messageElement: Element): string | undefined {
   const fromAnchor = messageElement.querySelector<HTMLAnchorElement>('.from_name a[href]');
   if (fromAnchor) {
-    const username = telegramUsernameFromHref(fromAnchor.href);
+    const username = telegramUsernameFromHref(fromAnchor.getAttribute('href') ?? '');
     if (username) return username;
   }
 
-  const anchors = Array.from(
-    messageElement.querySelectorAll<HTMLAnchorElement>('.text a[href]'),
-  );
-
-  for (const anchor of anchors) {
-    const username = telegramUsernameFromHref(anchor.href);
+  for (const anchor of Array.from(messageElement.querySelectorAll<HTMLAnchorElement>('.text a[href]'))) {
+    const username = telegramUsernameFromHref(anchor.getAttribute('href') ?? '');
     if (username && hasSelfContactContext(anchor)) return username;
   }
 
@@ -139,40 +128,28 @@ function resolveAuthorUsername(messageElement: Element): string | undefined {
 function extractAttachments(messageElement: Element): TelegramAttachment[] {
   const attachments: TelegramAttachment[] = [];
 
-  for (const photo of Array.from(
-    messageElement.querySelectorAll<HTMLAnchorElement>('a.photo_wrap[href]'),
-  )) {
-    attachments.push({
-      kind: 'photo',
-      href: photo.getAttribute('href') ?? undefined,
-      previewSrc: photo.querySelector<HTMLImageElement>('img.photo')?.getAttribute('src') ?? undefined,
-      included: true,
-    });
+  for (const photo of Array.from(messageElement.querySelectorAll<HTMLAnchorElement>('a.photo_wrap[href]'))) {
+    const href = photo.getAttribute('href') ?? undefined;
+    const previewSrc = photo.querySelector<HTMLImageElement>('img.photo')?.getAttribute('src') ?? undefined;
+    attachments.push({ kind: 'photo', included: true, ...(href ? { href } : {}), ...(previewSrc ? { previewSrc } : {}) });
   }
 
-  for (const placeholder of Array.from(
-    messageElement.querySelectorAll<HTMLElement>('.media_photo'),
-  )) {
+  for (const placeholder of Array.from(messageElement.querySelectorAll<HTMLElement>('.media_photo'))) {
+    const title = normalizeSpace(placeholder.querySelector('.title')?.textContent ?? '') || undefined;
+    const description = normalizeSpace(placeholder.querySelector('.description')?.textContent ?? '') || undefined;
+    const status = normalizeSpace(placeholder.querySelector('.status')?.textContent ?? '') || undefined;
     attachments.push({
       kind: 'photo',
-      title: normalizeSpace(placeholder.querySelector('.title')?.textContent ?? '') || undefined,
-      description:
-        normalizeSpace(placeholder.querySelector('.description')?.textContent ?? '') || undefined,
-      status: normalizeSpace(placeholder.querySelector('.status')?.textContent ?? '') || undefined,
       included: false,
+      ...(title ? { title } : {}),
+      ...(description ? { description } : {}),
+      ...(status ? { status } : {}),
     });
   }
 
-  for (const file of Array.from(
-    messageElement.querySelectorAll<HTMLAnchorElement>('a.file_wrap[href]'),
-  )) {
-    attachments.push({
-      kind: 'file',
-      href: file.getAttribute('href') ?? undefined,
-      title: normalizeSpace(file.querySelector('.title')?.textContent ?? '') || undefined,
-      status: normalizeSpace(file.querySelector('.status')?.textContent ?? '') || undefined,
-      included: true,
-    });
+  for (const file of Array.from(messageElement.querySelectorAll<HTMLAnchorElement>('a.file_wrap[href]'))) {
+    const href = file.getAttribute('href') ?? undefined;
+    attachments.push({ kind: 'file', included: true, ...(href ? { href } : {}) });
   }
 
   return attachments;
@@ -184,8 +161,7 @@ function isTemplateMessage(text: string): boolean {
 }
 
 function questionnaireMarkerCount(text: string): number {
-  const normalized = normalizeEmojiDigits(text);
-  return normalized
+  return normalizeEmojiDigits(text)
     .split('\n')
     .filter((line) => /^\s*[1-8](?:\s*[-–—/]\s*[1-8])?\s*[.)]?\s*\S/.test(line)).length;
 }
@@ -193,24 +169,20 @@ function questionnaireMarkerCount(text: string): number {
 function isProfileLike(text: string): boolean {
   if (!text || isTemplateMessage(text)) return false;
   if (questionnaireMarkerCount(text) >= 3) return true;
-
   const lower = text.toLowerCase();
-  const hasIntroTag = lower.includes('#знакомство') || lower.includes('#знакомоство');
-  if (hasIntroTag && text.length >= 100) return true;
-
+  if ((lower.includes('#знакомство') || lower.includes('#знакомоство')) && text.length >= 100) return true;
   return /меня\s+зовут/i.test(text) && /\b\d{2}\s*(?:лет|года?)\b/i.test(text);
 }
 
 function segmentQuestionnaire(text: string): Map<number, string> {
-  const normalized = normalizeEmojiDigits(text);
   const values = new Map<number, string[]>();
   let currentKeys: number[] = [];
 
-  for (const rawLine of normalized.split('\n')) {
+  for (const rawLine of normalizeEmojiDigits(text).split('\n')) {
     const line = normalizeSpace(rawLine);
     if (!line) continue;
-
     const match = line.match(/^([1-8])(?:\s*[-–—/]\s*([1-8]))?\s*[.)]?\s*(.*)$/);
+
     if (match) {
       const start = Number(match[1]);
       const end = match[2] ? Number(match[2]) : start;
@@ -224,14 +196,10 @@ function segmentQuestionnaire(text: string): Map<number, string> {
       continue;
     }
 
-    if (currentKeys.length > 0) {
-      currentKeys.forEach((key) => values.get(key)?.push(line));
-    }
+    if (currentKeys.length) currentKeys.forEach((key) => values.get(key)?.push(line));
   }
 
-  return new Map(
-    Array.from(values.entries()).map(([key, parts]) => [key, normalizeSpace(parts.join(' '))]),
-  );
+  return new Map(Array.from(values.entries()).map(([key, parts]) => [key, normalizeSpace(parts.join(' '))]));
 }
 
 function cleanName(value?: string): string | undefined {
@@ -245,16 +213,14 @@ function cleanName(value?: string): string | undefined {
 }
 
 function parseAge(value?: string): number | undefined {
-  if (!value) return undefined;
-  const match = value.match(/\b(1[6-9]|[2-9]\d)\b/);
+  const match = value?.match(/\b(1[6-9]|[2-9]\d)\b/);
   if (!match) return undefined;
   const age = Number(match[1]);
   return age <= 100 ? age : undefined;
 }
 
 function fallbackName(text: string): string | undefined {
-  const match = text.match(/меня\s+зовут\s+([^\n,.!?]{1,60})/i);
-  return cleanName(match?.[1]);
+  return cleanName(text.match(/меня\s+зовут\s+([^\n,.!?]{1,60})/i)?.[1]);
 }
 
 function fallbackAge(text: string): number | undefined {
@@ -287,17 +253,13 @@ function createStableProfileId(params: {
   rawProfileText: string;
 }): string {
   if (params.username) return `tg_${params.username.toLowerCase()}`;
-
-  const normalizedName = normalizeIdentity(params.displayName);
-  if (params.firstMessageId) {
-    return `msg_${fnv1a(`${normalizedName}|${params.firstMessageId}`)}`;
-  }
-
-  return `profile_${fnv1a(`${normalizedName}|${normalizeIdentity(params.rawProfileText)}`)}`;
+  const name = normalizeIdentity(params.displayName);
+  if (params.firstMessageId) return `msg_${fnv1a(`${name}|${params.firstMessageId}`)}`;
+  return `profile_${fnv1a(`${name}|${normalizeIdentity(params.rawProfileText)}`)}`;
 }
 
 function profileRichness(profile: Profile): number {
-  return [
+  const filled = [
     profile.name,
     profile.city,
     profile.age,
@@ -307,26 +269,39 @@ function profileRichness(profile: Profile): number {
     profile.goal90Days,
     profile.canHelpWith,
     profile.telegramUsername,
-  ].filter((value) => value !== undefined && value !== '').length + profile.rawProfileText.length / 1000;
+  ].filter((value) => value !== undefined && value !== '').length;
+  return filled + profile.rawProfileText.length / 1000;
+}
+
+function participantKey(profile: Profile): string {
+  return profile.telegramUsername
+    ? `tg:${profile.telegramUsername.toLowerCase()}`
+    : `name:${normalizeIdentity(profile.telegramDisplayName)}`;
 }
 
 function dedupeProfiles(profiles: Profile[]): Profile[] {
-  const byId = new Map<string, Profile>();
+  const byParticipant = new Map<string, Profile>();
+
   for (const profile of profiles) {
-    const current = byId.get(profile.id);
-    if (!current || profileRichness(profile) > profileRichness(current)) {
-      byId.set(profile.id, profile);
+    const key = participantKey(profile);
+    const current = byParticipant.get(key);
+    if (!current) {
+      byParticipant.set(key, profile);
+      continue;
+    }
+    if (profileRichness(profile) > profileRichness(current)) {
+      byParticipant.set(key, { ...profile, id: current.id, avatarSeed: current.id });
     }
   }
-  return Array.from(byId.values());
+
+  return Array.from(byParticipant.values());
 }
 
-function buildProfile(
-  messages: ParsedTelegramMessage[],
-  warnings: TelegramParseWarning[],
-): Profile | undefined {
-  const first = messages[0];
+function buildProfile(messages: ParsedTelegramMessage[], warnings: TelegramParseWarning[]): Profile | undefined {
+  const profileMessages = messages.filter((message) => !isTemplateMessage(message.text));
+  const first = profileMessages[0];
   const author = first?.authorDisplayName;
+
   if (!first || !author) {
     warnings.push({
       code: 'profile-without-author',
@@ -336,15 +311,13 @@ function buildProfile(
     return undefined;
   }
 
-  const rawProfileText = messages.map((message) => message.text).filter(Boolean).join('\n\n');
+  const rawProfileText = profileMessages.map((message) => message.text).filter(Boolean).join('\n\n');
   const fields = segmentQuestionnaire(rawProfileText);
-  const username = messages.find((message) => message.authorUsername)?.authorUsername;
-
+  const username = profileMessages.find((message) => message.authorUsername)?.authorUsername;
   const name = cleanName(fields.get(1)) ?? fallbackName(rawProfileText);
   const age = parseAge(fields.get(3)) ?? fallbackAge(rawProfileText);
 
-  const hasStructuredFields = fields.size > 0 || name !== undefined || age !== undefined;
-  if (!hasStructuredFields) {
+  if (fields.size === 0 && name === undefined && age === undefined) {
     warnings.push({
       code: 'profile-without-fields',
       messageId: first.id,
@@ -352,34 +325,30 @@ function buildProfile(
     });
   }
 
-  const id = createStableProfileId({
-    username,
-    displayName: author,
-    firstMessageId: first.id,
-    rawProfileText,
-  });
+  const id = createStableProfileId({ username, displayName: author, firstMessageId: first.id, rawProfileText });
+  const realImageReference = profileMessages
+    .flatMap((message) => message.attachments)
+    .find((attachment) => attachment.kind === 'photo' && attachment.included)?.href;
 
   return {
     id,
     telegramDisplayName: author,
-    telegramUsername: username,
-    name,
-    city: fields.get(2),
-    age,
-    occupation: fields.get(4),
-    currentChallenge: fields.get(5),
-    currentPriority: fields.get(6),
-    goal90Days: fields.get(7),
-    canHelpWith: fields.get(8),
+    ...(username ? { telegramUsername: username } : {}),
+    ...(name ? { name } : {}),
+    ...(fields.get(2) ? { city: fields.get(2) } : {}),
+    ...(age !== undefined ? { age } : {}),
+    ...(fields.get(4) ? { occupation: fields.get(4) } : {}),
+    ...(fields.get(5) ? { currentChallenge: fields.get(5) } : {}),
+    ...(fields.get(6) ? { currentPriority: fields.get(6) } : {}),
+    ...(fields.get(7) ? { goal90Days: fields.get(7) } : {}),
+    ...(fields.get(8) ? { canHelpWith: fields.get(8) } : {}),
     domains: [],
     challenges: [],
     searchKeywords: [],
     rawProfileText,
     sourceMessageId: first.id,
-    sourceDate: first.date,
-    realImageReference: messages
-      .flatMap((message) => message.attachments)
-      .find((attachment) => attachment.kind === 'photo' && attachment.included)?.href,
+    ...(first.date ? { sourceDate: first.date } : {}),
+    ...(realImageReference ? { realImageReference } : {}),
     avatarSeed: id,
   };
 }
@@ -392,8 +361,7 @@ export function parseTelegramExport(html: string): TelegramParseResult {
   let lastAuthorUsername: string | undefined;
 
   for (const element of Array.from(document.querySelectorAll<HTMLElement>('.message'))) {
-    if (element.classList.contains('service')) continue;
-    if (!element.classList.contains('default')) continue;
+    if (element.classList.contains('service') || !element.classList.contains('default')) continue;
 
     const isJoined = element.classList.contains('joined');
     const explicitAuthor = normalizeSpace(element.querySelector('.from_name')?.textContent ?? '') || undefined;
@@ -406,38 +374,37 @@ export function parseTelegramExport(html: string): TelegramParseResult {
 
     const authorDisplayName = explicitAuthor ?? (isJoined ? lastAuthor : undefined);
     const authorUsername = explicitUsername ?? (isJoined ? lastAuthorUsername : undefined);
+    const id = element.id.replace(/^message/, '');
 
     if (isJoined && !authorDisplayName) {
       warnings.push({
         code: 'joined-without-author',
-        messageId: element.id.replace(/^message/, ''),
+        messageId: id,
         detail: 'Joined Telegram message appeared before a resolvable author.',
       });
     }
 
     const textElement = element.querySelector('.body > .text') ?? element.querySelector('.text');
-    const dateElement = element.querySelector<HTMLElement>('.pull_right.date.details');
+    const date = element.querySelector<HTMLElement>('.pull_right.date.details')?.getAttribute('title') ?? undefined;
 
     messages.push({
-      id: element.id.replace(/^message/, ''),
-      authorDisplayName,
-      authorUsername,
+      id,
+      ...(authorDisplayName ? { authorDisplayName } : {}),
+      ...(authorUsername ? { authorUsername } : {}),
       isJoined,
-      date: dateElement?.getAttribute('title') ?? undefined,
+      ...(date ? { date } : {}),
       text: extractTextPreservingBreaks(textElement),
       links: extractLinks(textElement),
       attachments: extractAttachments(element),
     });
   }
 
-  const profileGroups: ParsedTelegramMessage[][] = [];
-  let currentGroup: ParsedTelegramMessage[] = [];
+  const groups: ParsedTelegramMessage[][] = [];
+  let current: ParsedTelegramMessage[] = [];
 
   const flush = () => {
-    if (currentGroup.length > 0 && currentGroup.some((message) => isProfileLike(message.text))) {
-      profileGroups.push(currentGroup);
-    }
-    currentGroup = [];
+    if (current.length && current.some((message) => isProfileLike(message.text))) groups.push(current);
+    current = [];
   };
 
   for (const message of messages) {
@@ -453,20 +420,17 @@ export function parseTelegramExport(html: string): TelegramParseResult {
       continue;
     }
 
-    if (
-      currentGroup.length === 0 ||
-      currentGroup[0]?.authorDisplayName === message.authorDisplayName
-    ) {
-      currentGroup.push(message);
+    if (!current.length || current[0]?.authorDisplayName === message.authorDisplayName) {
+      current.push(message);
     } else {
       flush();
-      currentGroup.push(message);
+      current.push(message);
     }
   }
   flush();
 
   const profiles = dedupeProfiles(
-    profileGroups
+    groups
       .map((group) => buildProfile(group, warnings))
       .filter((profile): profile is Profile => Boolean(profile)),
   );
