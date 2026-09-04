@@ -19,8 +19,9 @@ async function importFixture(page: Page) {
   await expect(page).toHaveURL(/\/$/);
 }
 
-test('canonical home renders without overflow and keeps approved proportions', async ({ page }, testInfo) => {
+test('golden master home geometry stays dense and proportional', async ({ page }, testInfo) => {
   await page.goto('/');
+  await expect(page.locator('.brand-wordmark')).toBeVisible({ visible: testInfo.project.name !== 'mobile-chromium' });
   await expect(page.locator('.hero--approved')).toBeVisible();
   await expect(page.getByText('Сферы сообщества')).toBeVisible();
   await expect(page.getByRole('textbox', { name: 'Поиск' })).toBeVisible();
@@ -32,19 +33,25 @@ test('canonical home renders without overflow and keeps approved proportions', a
   const search = await page.locator('.search-bridge').boundingBox();
   const dashboard = await page.locator('.dashboard-grid').boundingBox();
   const favorites = await page.locator('.favorites-strip').boundingBox();
-  const insights = await page.locator('.insight-grid').boundingBox();
+  const domains = await page.locator('.domains-panel').boundingBox();
+  const challenges = await page.locator('.challenges-panel').boundingBox();
 
-  expect(hero).not.toBeNull(); expect(search).not.toBeNull(); expect(dashboard).not.toBeNull(); expect(favorites).not.toBeNull(); expect(insights).not.toBeNull();
-  if (hero && search && dashboard && favorites && insights) {
+  expect(hero).not.toBeNull(); expect(search).not.toBeNull(); expect(dashboard).not.toBeNull(); expect(favorites).not.toBeNull(); expect(domains).not.toBeNull(); expect(challenges).not.toBeNull();
+  if (hero && search && dashboard && favorites && domains && challenges) {
     if (testInfo.project.name !== 'mobile-chromium') {
-      expect(hero.height).toBeGreaterThanOrEqual(190);
-      expect(hero.height).toBeLessThanOrEqual(300);
-      expect(search.width).toBeGreaterThanOrEqual(hero.width * 0.62);
-      expect(dashboard.y - (search.y + search.height)).toBeGreaterThanOrEqual(8);
-      expect(favorites.y - (dashboard.y + dashboard.height)).toBeGreaterThanOrEqual(12);
-      expect(insights.y - (favorites.y + favorites.height)).toBeGreaterThanOrEqual(12);
+      expect(hero.height).toBeGreaterThanOrEqual(220);
+      expect(hero.height).toBeLessThanOrEqual(270);
+      expect(search.width).toBeGreaterThanOrEqual(hero.width * 0.64);
+      expect(search.y).toBeLessThan(hero.y + hero.height);
+      expect(search.y + search.height).toBeGreaterThan(hero.y + hero.height);
+      expect(dashboard.height).toBeLessThanOrEqual(210);
+      expect(favorites.height).toBeLessThanOrEqual(125);
+      expect(domains.width).toBeGreaterThan(challenges.width * 1.35);
+      const sphere = await page.locator('.domain-tile-v1').first().boundingBox();
+      expect(sphere).not.toBeNull();
+      if (sphere) expect(sphere.height).toBeGreaterThanOrEqual(118);
     } else {
-      expect(hero.height).toBeLessThanOrEqual(220);
+      expect(hero.height).toBeLessThanOrEqual(210);
       expect(search.width).toBeGreaterThanOrEqual(330);
     }
   }
@@ -58,6 +65,17 @@ test('base navigation routes render', async ({ page }) => {
   await page.getByRole('navigation', { name: navigationName }).getByText('Мои братья').click();
   await expect(page.getByRole('heading', { name: 'Мои братья' })).toBeVisible();
   await expect(page).toHaveURL(/\/brothers$/);
+});
+
+test('find page uses the same SmartSearch and focuses on first click', async ({ page }) => {
+  await importFixture(page);
+  await page.goto('/find');
+  const search = page.getByRole('textbox', { name: 'Поиск' });
+  await search.click();
+  await expect(search).toBeFocused();
+  await search.type('груз');
+  await expect(page.getByRole('listbox', { name: 'Подсказки поиска' })).toBeVisible();
+  await expect(page.getByRole('option').filter({ hasText: 'Грузоперевозки и логистика' })).toBeVisible();
 });
 
 test('power search suggests related concepts, finds raw text and keeps clean names', async ({ page }, testInfo) => {
@@ -87,24 +105,35 @@ test('power search suggests related concepts, finds raw text and keeps clean nam
   await expect(page.getByRole('heading', { name: 'Александр' })).toHaveCount(0);
 });
 
-test('recommendation refresh changes the visible recommendation order and cards never overflow', async ({ page }, testInfo) => {
+test('recommendation refresh changes four compact cards without overflow', async ({ page }, testInfo) => {
   await importFixture(page);
   const select = page.locator('.self-select select');
   const selfOption = select.locator('option').filter({ hasText: 'Леонид Цветков' }).first();
   const selfValue = await selfOption.getAttribute('value');
   expect(selfValue).not.toBeNull();
   await select.selectOption(selfValue!);
-  const cards = page.locator('.recommendation-grid .profile-card__title');
+  const cards = page.locator('.recommendation-grid .profile-card');
+  const titles = page.locator('.recommendation-grid .profile-card__title');
   await expect(cards).toHaveCount(4);
-  const before = await cards.allTextContents();
+  const before = await titles.allTextContents();
   await page.getByRole('button', { name: 'Обновить подборку' }).click();
-  await expect.poll(async () => cards.allTextContents()).not.toEqual(before);
-  const after = await cards.allTextContents();
-  expect(after).not.toEqual(before);
+  await expect.poll(async () => titles.allTextContents()).not.toEqual(before);
 
-  const leaking = await page.locator('.profile-card').evaluateAll((elements) => elements.some((element) => element.scrollWidth > element.clientWidth + 1));
-  expect(leaking).toBe(false);
+  const sizes = await cards.evaluateAll((elements) => elements.map((element) => ({ height: element.getBoundingClientRect().height, leaking: element.scrollWidth > element.clientWidth + 1 })));
+  expect(sizes.every(({ height, leaking }) => height <= 120 && !leaking)).toBe(true);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(0);
   await page.screenshot({ path: `test-results/recommendations-${testInfo.project.name}.png`, fullPage: true });
+});
+
+test('directory cards stay dense instead of giant empty containers', async ({ page }) => {
+  await importFixture(page);
+  await page.goto('/domains?domain=Продажи');
+  const firstCard = page.locator('.profile-card--result').first();
+  await expect(firstCard).toBeVisible();
+  const box = await firstCard.boundingBox();
+  expect(box).not.toBeNull();
+  if (box) expect(box.height).toBeLessThanOrEqual(230);
+  const leak = await page.locator('.profile-card--result').evaluateAll((elements) => elements.some((element) => element.scrollWidth > element.clientWidth + 1));
+  expect(leak).toBe(false);
 });
