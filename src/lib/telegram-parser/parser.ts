@@ -207,8 +207,8 @@ function cleanName(value?: string): string | undefined {
   const cleaned = value
     .replace(/^меня\s+зовут\s+/i, '')
     .replace(/^я\s+/i, '')
-    .replace(/[,;]\s*(?:мне\s*)?(?:1[6-9]|[2-9]\d)\s*(?:лет|года?)\b.*$/i, '')
-    .replace(/\s+(?:мне\s*)?(?:1[6-9]|[2-9]\d)\s*(?:лет|года?)\b.*$/i, '')
+    .split(/[,;]\s*(?=(?:1[6-9]|[2-9]\d)\b)/)[0]
+    ?.replace(/\s+(?:мне\s*)?(?:1[6-9]|[2-9]\d)\s*(?:лет|год(?:а|ов)?)?\s*$/i, '')
     .replace(/[.;]+$/g, '')
     .trim();
   return cleaned || undefined;
