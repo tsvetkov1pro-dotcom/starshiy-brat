@@ -2,9 +2,7 @@ import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { App } from './app/App';
 import './styles/tokens.css';
-import './styles/globals.css';
-import './styles/hotfix.css';
-import './styles/qa-fixes.css';
+import './styles/golden-master.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode><App /></StrictMode>,
