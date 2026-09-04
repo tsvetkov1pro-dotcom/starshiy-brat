@@ -117,10 +117,10 @@ export function HomePage() {
                 {selectedSelf ? (
                   <button className="self-summary__person" type="button" onClick={() => setOpenedProfile(selectedSelf)}>
                     <ProfileAvatar profile={selectedSelf} />
-                    <span>
+                    <div>
                       <strong>{getProfileDisplayName(selectedSelf)}</strong>
-                      <small>{[selectedSelf.occupation, selectedSelf.city].filter(Boolean).join(' · ') || 'Участник сообщества'}</small>
-                    </span>
+                      <span>{[selectedSelf.occupation, selectedSelf.city].filter(Boolean).join(' · ') || 'Участник сообщества'}</span>
+                    </div>
                   </button>
                 ) : <p className="muted self-hint">Выбери свою визитку — рекомендации станут персональными.</p>}
               </>
