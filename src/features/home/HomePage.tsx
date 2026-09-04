@@ -46,8 +46,6 @@ export function HomePage() {
     favoriteProfileIds,
     selectSelf,
     toggleFavorite,
-    toggleInterest,
-    toggleChallenge,
   } = useAppData();
   const [query, setQuery] = useState('');
   const [openedProfile, setOpenedProfile] = useState<Profile>();
@@ -73,11 +71,9 @@ export function HomePage() {
     const hydrated = recommendationPool
       .map((recommendation) => ({ recommendation, profile: profiles.find((profile) => profile.id === recommendation.profileId) }))
       .filter((item): item is { recommendation: (typeof recommendationPool)[number]; profile: Profile } => Boolean(item.profile));
-    return rotate(hydrated, refreshSeed).slice(0, 4);
+    const step = hydrated.length > 4 ? 4 : 1;
+    return rotate(hydrated, refreshSeed * step).slice(0, 4);
   }, [recommendationPool, profiles, refreshSeed]);
-
-  const selfDomains = [...domainCounts.keys()].filter((name) => name !== 'Другое').slice(0, 4);
-  const selfChallenges = [...countTags(profiles, 'challenges').keys()].slice(0, 4);
 
   function search(value: string) {
     const trimmed = value.trim();
@@ -85,7 +81,7 @@ export function HomePage() {
   }
 
   return (
-    <div className="home-page home-page--v1">
+    <div className="home-page">
       <HeroBanner />
 
       <SearchBox
@@ -94,7 +90,7 @@ export function HomePage() {
         onChange={setQuery}
         onSearch={search}
         className="search-bridge"
-        placeholder="Кого ищешь? Например: грузоперевозки, продажи, AI…"
+        placeholder="Кого ищешь? Например: IT, продажи, стройка…"
         buttonLabel="Найти брата"
       />
 
@@ -104,7 +100,7 @@ export function HomePage() {
             <div className="panel__heading"><h2>Выберите себя</h2></div>
             {!ready ? <p className="muted">Загружаю локальную базу…</p> : profiles.length === 0 ? (
               <div className="self-empty">
-                <p>Сначала импортируй визитки сообщества. Файл обрабатывается только на этом устройстве.</p>
+                <p>Сначала импортируй визитки сообщества.</p>
                 <Link className="button button--secondary" to="/import">Импортировать чат</Link>
               </div>
             ) : (
@@ -119,18 +115,13 @@ export function HomePage() {
                   </select>
                 </label>
                 {selectedSelf ? (
-                  <div className="self-summary">
-                    <div className="self-summary__person">
-                      <ProfileAvatar profile={selectedSelf} />
-                      <div><strong>{getProfileDisplayName(selectedSelf)}</strong><span>{[selectedSelf.occupation, selectedSelf.city].filter(Boolean).join(' · ')}</span></div>
-                    </div>
-                    <div className="compact-preferences">
-                      <span className="compact-preferences__label">Интересы</span>
-                      <div className="chip-row">{selfDomains.map((domain) => <button type="button" className={`chip${selectedInterests.includes(domain) ? ' is-active' : ''}`} onClick={() => { toggleInterest(domain); setRefreshSeed(0); }} key={domain}>{domain}</button>)}</div>
-                      <span className="compact-preferences__label">Вызовы</span>
-                      <div className="chip-row">{selfChallenges.map((challenge) => <button type="button" className={`chip${selectedChallenges.includes(challenge) ? ' is-active' : ''}`} onClick={() => { toggleChallenge(challenge); setRefreshSeed(0); }} key={challenge}>{challenge}</button>)}</div>
-                    </div>
-                  </div>
+                  <button className="self-summary__person" type="button" onClick={() => setOpenedProfile(selectedSelf)}>
+                    <ProfileAvatar profile={selectedSelf} />
+                    <span>
+                      <strong>{getProfileDisplayName(selectedSelf)}</strong>
+                      <small>{[selectedSelf.occupation, selectedSelf.city].filter(Boolean).join(' · ') || 'Участник сообщества'}</small>
+                    </span>
+                  </button>
                 ) : <p className="muted self-hint">Выбери свою визитку — рекомендации станут персональными.</p>}
               </>
             )}
@@ -138,7 +129,7 @@ export function HomePage() {
 
           <article className="panel panel--recommendations">
             <div className="panel__heading panel__heading--row">
-              <div><h2>Подобрано для тебя</h2><p>Братья, которые ближе всего к твоим задачам и интересам.</p></div>
+              <h2>Подобрано для тебя</h2>
               <button
                 className="icon-button recommendation-refresh"
                 type="button"
@@ -160,7 +151,7 @@ export function HomePage() {
                   onToggleFavorite={() => toggleFavorite(profile.id)}
                 />
               )) : [0, 1, 2, 3].map((index) => (
-                <div className="recommendation-empty" key={index}><span className="recommendation-empty__avatar" /><span>{profiles.length === 0 ? 'После импорта' : selectedSelf ? 'Добавь интересы или вызовы' : 'Сначала выбери себя'}</span></div>
+                <div className="recommendation-empty" key={index}><span className="recommendation-empty__avatar" /><span>{profiles.length === 0 ? 'После импорта' : selectedSelf ? 'Нет подходящих профилей' : 'Сначала выбери себя'}</span></div>
               ))}
             </div>
           </article>
@@ -205,7 +196,7 @@ export function HomePage() {
                   <ArrowRight size={16} />
                 </button>
               );
-            })}</div> : <div className="challenges-empty"><span className="challenge-row__icon"><Users size={18} /></span><p>После импорта здесь появятся реальные похожие вызовы сообщества.</p></div>}
+            })}</div> : <div className="challenges-empty"><span className="challenge-row__icon"><Users size={18} /></span><p>После импорта здесь появятся похожие вызовы сообщества.</p></div>}
           </article>
         </section>
       </div>
