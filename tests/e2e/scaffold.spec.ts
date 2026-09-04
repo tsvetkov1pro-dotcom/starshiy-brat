@@ -60,7 +60,7 @@ test('base navigation routes render', async ({ page }) => {
   await expect(page).toHaveURL(/\/brothers$/);
 });
 
-test('power search suggests related concepts, finds raw text and keeps clean names', async ({ page }) => {
+test('power search suggests related concepts, finds raw text and keeps clean names', async ({ page }, testInfo) => {
   await importFixture(page);
   const search = page.getByRole('textbox', { name: 'Поиск' });
   await search.fill('груз');
@@ -69,21 +69,25 @@ test('power search suggests related concepts, finds raw text and keeps clean nam
   await page.getByRole('option').filter({ hasText: 'Грузоперевозки и логистика' }).click();
 
   await expect(page).toHaveURL(/\/find\?q=/);
-  await expect(page.getByText('Александр', { exact: true }).first()).toBeVisible();
-  await expect(page.getByText(/Как тебя зовут\?/)).toHaveCount(0);
+  const cleanName = page.locator('.profile-card__title').filter({ hasText: /^Александр$/ }).first();
+  await expect(cleanName).toBeVisible();
+  await expect(page.locator('.profile-card__title').filter({ hasText: /Как тебя зовут\?/ })).toHaveCount(0);
   await expect(page.locator('.search-highlight').first()).toBeVisible();
 
   const alex = page.locator('.profile-card--result').filter({ hasText: 'Александр' }).first();
   await expect(alex).toContainText(/логист|достав|перевоз|груз/i);
+  await page.screenshot({ path: `test-results/search-${testInfo.project.name}.png`, fullPage: true });
+
   await alex.locator('.profile-card__open').click();
   await expect(page.getByRole('heading', { name: 'Александр' })).toBeVisible();
   await expect(page.getByText('Чем занимается')).toBeVisible();
   await expect(page.getByText('Чем может быть полезен')).toBeVisible();
+  await page.screenshot({ path: `test-results/profile-${testInfo.project.name}.png`, fullPage: true });
   await page.keyboard.press('Escape');
   await expect(page.getByRole('heading', { name: 'Александр' })).toHaveCount(0);
 });
 
-test('recommendation refresh changes the visible recommendation order and cards never overflow', async ({ page }) => {
+test('recommendation refresh changes the visible recommendation order and cards never overflow', async ({ page }, testInfo) => {
   await importFixture(page);
   const select = page.locator('.self-select select');
   await select.selectOption({ label: /Леонид Цветков/ });
@@ -98,4 +102,5 @@ test('recommendation refresh changes the visible recommendation order and cards 
   expect(leaking).toBe(false);
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(0);
+  await page.screenshot({ path: `test-results/recommendations-${testInfo.project.name}.png`, fullPage: true });
 });
