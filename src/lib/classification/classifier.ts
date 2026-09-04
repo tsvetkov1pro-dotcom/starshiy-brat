@@ -1,7 +1,8 @@
 import type { Profile } from '../../types/profile';
+import { normalizeProfile } from '../profile-normalization';
 import { CHALLENGE_RULES, DOMAIN_RULES, type ClassificationRule } from './rules';
 
-export const CLASSIFICATION_VERSION = '1.0.0';
+export const CLASSIFICATION_VERSION = '1.1.0';
 
 export interface ClassificationEvidence {
   tag: string;
@@ -41,22 +42,8 @@ function challengeSource(profile: Profile): string {
 }
 
 const STOP_WORDS = new Set([
-  'который',
-  'которая',
-  'которые',
-  'сейчас',
-  'могу',
-  'может',
-  'помочь',
-  'занимаюсь',
-  'занимается',
-  'работаю',
-  'работает',
-  'очень',
-  'также',
-  'через',
-  'будет',
-  'чтобы',
+  'который', 'которая', 'которые', 'сейчас', 'могу', 'может', 'помочь', 'занимаюсь',
+  'занимается', 'работаю', 'работает', 'очень', 'также', 'через', 'будет', 'чтобы',
 ]);
 
 function tokenize(value: string): string[] {
@@ -80,14 +67,13 @@ function buildSearchKeywords(profile: Profile, domains: string[], challenges: st
     profile.goal90Days,
     ...domains,
     ...challenges,
-  ]
-    .filter(Boolean)
-    .join(' ');
+  ].filter(Boolean).join(' ');
 
   return [...new Set(tokenize(source))].slice(0, 80);
 }
 
-export function classifyProfile(profile: Profile): ClassifiedProfileResult {
+export function classifyProfile(input: Profile): ClassifiedProfileResult {
+  const profile = normalizeProfile(input);
   const domainEvidence = classifyText(professionalSource(profile), DOMAIN_RULES);
   const challengeEvidence = classifyText(challengeSource(profile), CHALLENGE_RULES);
   const domains = domainEvidence.map(({ tag }) => tag);
@@ -114,9 +100,7 @@ export function classifyProfiles(profiles: Profile[]): Profile[] {
 export function countTags(profiles: Profile[], key: 'domains' | 'challenges'): Map<string, number> {
   const counts = new Map<string, number>();
   for (const profile of profiles) {
-    for (const tag of new Set(profile[key])) {
-      counts.set(tag, (counts.get(tag) ?? 0) + 1);
-    }
+    for (const tag of new Set(profile[key])) counts.set(tag, (counts.get(tag) ?? 0) + 1);
   }
   return new Map([...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'ru')));
 }

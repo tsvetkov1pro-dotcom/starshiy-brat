@@ -3,13 +3,10 @@ import { createRoot } from 'react-dom/client';
 import { App } from './app/App';
 import './styles/tokens.css';
 import './styles/globals.css';
-import './styles/product.css';
-import './styles/brand-assets.css';
+import './styles/hotfix.css';
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
+  <StrictMode><App /></StrictMode>,
 );
 
 if ('serviceWorker' in navigator && import.meta.env.PROD) {

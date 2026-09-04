@@ -6,13 +6,13 @@ describe('application shell', () => {
     window.history.pushState({}, '', '/');
     render(<App />);
 
-    expect(await screen.findByRole('img', { name: /Старший Брат — найдите своего человека в сообществе/i })).toBeInTheDocument();
+    expect(await screen.findByRole('region', { name: /Старший Брат — навигатор по сообществу/i })).toBeInTheDocument();
     expect(screen.getByText('Выберите себя')).toBeInTheDocument();
     expect(screen.getByText('Подобрано для тебя')).toBeInTheDocument();
     expect(screen.getByText('Сферы сообщества')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Поиск' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Обновить подборку' })).toBeDisabled();
 
-    // Wait for the async IndexedDB bootstrap to settle before jsdom teardown.
     expect(await screen.findByText(/Сначала импортируй визитки сообщества/i)).toBeInTheDocument();
   });
 });
