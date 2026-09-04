@@ -90,11 +90,15 @@ test('power search suggests related concepts, finds raw text and keeps clean nam
 test('recommendation refresh changes the visible recommendation order and cards never overflow', async ({ page }, testInfo) => {
   await importFixture(page);
   const select = page.locator('.self-select select');
-  await select.selectOption({ label: /Леонид Цветков/ });
+  const selfOption = select.locator('option').filter({ hasText: 'Леонид Цветков' }).first();
+  const selfValue = await selfOption.getAttribute('value');
+  expect(selfValue).not.toBeNull();
+  await select.selectOption(selfValue!);
   const cards = page.locator('.recommendation-grid .profile-card__title');
   await expect(cards).toHaveCount(4);
   const before = await cards.allTextContents();
   await page.getByRole('button', { name: 'Обновить подборку' }).click();
+  await expect.poll(async () => cards.allTextContents()).not.toEqual(before);
   const after = await cards.allTextContents();
   expect(after).not.toEqual(before);
 
