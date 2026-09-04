@@ -8,7 +8,10 @@ export interface ClassificationRule {
   patterns: ClassificationPattern[];
 }
 
-const p = (label: string, source: string) => ({ label, pattern: new RegExp(source, 'iu') });
+const p = (label: string, source: string) => {
+  const unicodeSource = source.split('\\w*').join('\\p{L}*');
+  return { label, pattern: new RegExp(unicodeSource, 'iu') };
+};
 
 export const DOMAIN_RULES: ClassificationRule[] = [
   {
