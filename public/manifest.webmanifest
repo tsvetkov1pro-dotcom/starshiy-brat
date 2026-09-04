@@ -1,0 +1,19 @@
+{
+  "name": "Старший Брат",
+  "short_name": "Старший Брат",
+  "description": "Навигатор по сообществу",
+  "lang": "ru",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f2ea",
+  "theme_color": "#11100f",
+  "icons": [
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
