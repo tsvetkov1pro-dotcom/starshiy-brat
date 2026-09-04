@@ -4,6 +4,7 @@ export function BrandLogo({ compact = false }: { compact?: boolean; inverse?: bo
   return (
     <img
       className={`brand-wordmark brand-wordmark--image${compact ? ' brand-wordmark--compact' : ''}`}
+      style={{ width: compact ? 120 : 150, height: 'auto' }}
       src={APPROVED_LOGO}
       alt="Старший Брат"
       draggable={false}
