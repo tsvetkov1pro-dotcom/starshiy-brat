@@ -19,6 +19,7 @@ export interface TelegramLink {
 export interface ParsedTelegramMessage {
   id: string;
   authorDisplayName?: string;
+  authorUsername?: string;
   isJoined: boolean;
   date?: string;
   text: string;
