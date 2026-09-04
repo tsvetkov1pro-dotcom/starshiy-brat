@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+build/
+.next/
+.vercel/
+
+# Environment / secrets
+.env
+.env.*
+!.env.example
+
+# Telegram exports and private community data
+messages.html
+result.json
+export_results/
+Telegram Desktop/
+chats/
+photos/
+video_files/
+voice_messages/
+stickers/
+files/
+
+# Local databases / caches
+*.sqlite
+*.sqlite3
+*.db
+*.log
+.cache/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
