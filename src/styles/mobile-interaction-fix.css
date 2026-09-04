@@ -1,0 +1,25 @@
+@media (max-width: 900px) {
+  .dashboard-grid > .panel--self,
+  .dashboard-grid > .panel--recommendations {
+    position: relative;
+  }
+
+  .dashboard-grid > .panel--self {
+    z-index: 1;
+  }
+
+  .dashboard-grid > .panel--recommendations {
+    z-index: 2;
+  }
+
+  .panel--recommendations .panel__heading--row {
+    position: relative;
+    z-index: 3;
+  }
+
+  .recommendation-refresh {
+    position: relative;
+    z-index: 4;
+    pointer-events: auto;
+  }
+}
