@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 import { StarshiyBratDatabase } from '../../db/schema';
 import type { Profile } from '../../types/profile';
 import { importProfilesTransactionally } from './profile-repository';
-import { ImportValidationError, importTelegramHtml } from './import-service';
+import { importTelegramHtml } from './import-service';
 
 const existingProfile: Profile = {
   id: 'existing',
@@ -72,7 +72,7 @@ describe('Telegram import service', () => {
 
     await expect(
       importTelegramHtml('<html><body>not telegram</body></html>', { sourceName: 'bad.html' }, database),
-    ).rejects.toMatchObject<Partial<ImportValidationError>>({ code: 'no-telegram-messages' });
+    ).rejects.toMatchObject({ code: 'no-telegram-messages' });
 
     expect((await database.profiles.toArray()).map((profile) => profile.id)).toEqual(['existing']);
     expect((await database.importMeta.get('current'))?.sourceName).toBe('previous.html');
@@ -97,7 +97,7 @@ describe('Telegram import service', () => {
 
     await expect(
       importTelegramHtml(chatOnly, { sourceName: 'chat.html' }, database),
-    ).rejects.toMatchObject<Partial<ImportValidationError>>({ code: 'no-profiles' });
+    ).rejects.toMatchObject({ code: 'no-profiles' });
 
     expect((await database.profiles.toArray()).map((profile) => profile.id)).toEqual(['existing']);
   });
