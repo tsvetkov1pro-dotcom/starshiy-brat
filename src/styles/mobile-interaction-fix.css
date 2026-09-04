@@ -1,4 +1,10 @@
 @media (max-width: 900px) {
+  .main-content,
+  .home-page,
+  .directory-page {
+    overflow-x: clip;
+  }
+
   .dashboard-grid,
   .dashboard-grid > *,
   .panel--self,
