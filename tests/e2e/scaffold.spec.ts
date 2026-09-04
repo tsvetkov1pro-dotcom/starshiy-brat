@@ -10,14 +10,13 @@ test('renders the application shell without horizontal overflow', async ({ page 
   expect(overflow).toBeLessThanOrEqual(0);
 });
 
-test('base navigation routes render', async ({ page, isMobile }) => {
+test('base navigation routes render', async ({ page }) => {
   await page.goto('/');
 
-  if (isMobile) {
-    await page.getByRole('navigation', { name: 'Мобильная навигация' }).getByText('Мои братья').click();
-  } else {
-    await page.getByRole('navigation', { name: 'Основная навигация' }).getByText('Мои братья').click();
-  }
+  const isMobileViewport = (page.viewportSize()?.width ?? 1440) <= 900;
+  const navigationName = isMobileViewport ? 'Мобильная навигация' : 'Основная навигация';
+
+  await page.getByRole('navigation', { name: navigationName }).getByText('Мои братья').click();
 
   await expect(page.getByRole('heading', { name: 'Мои братья' })).toBeVisible();
   await expect(page).toHaveURL(/\/brothers$/);
