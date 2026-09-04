@@ -207,6 +207,8 @@ function cleanName(value?: string): string | undefined {
   const cleaned = value
     .replace(/^меня\s+зовут\s+/i, '')
     .replace(/^я\s+/i, '')
+    .replace(/[,;]\s*(?:мне\s*)?(?:1[6-9]|[2-9]\d)\s*(?:лет|года?)\b.*$/i, '')
+    .replace(/\s+(?:мне\s*)?(?:1[6-9]|[2-9]\d)\s*(?:лет|года?)\b.*$/i, '')
     .replace(/[.;]+$/g, '')
     .trim();
   return cleaned || undefined;
@@ -315,7 +317,7 @@ function buildProfile(messages: ParsedTelegramMessage[], warnings: TelegramParse
   const fields = segmentQuestionnaire(rawProfileText);
   const username = profileMessages.find((message) => message.authorUsername)?.authorUsername;
   const name = cleanName(fields.get(1)) ?? fallbackName(rawProfileText);
-  const age = parseAge(fields.get(3)) ?? fallbackAge(rawProfileText);
+  const age = parseAge(fields.get(3)) ?? parseAge(fields.get(1)) ?? fallbackAge(rawProfileText);
 
   if (fields.size === 0 && name === undefined && age === undefined) {
     warnings.push({
