@@ -4,6 +4,7 @@ import { getProfileDisplayName } from '../lib/profile-normalization';
 import type { Profile } from '../types/profile';
 import { HighlightText } from './HighlightText';
 import { ProfileAvatar } from './ProfileAvatar';
+import './ProfileDialog.css';
 
 function Field({ label, value, terms = [] }: { label: string; value?: string | number; terms?: string[] }) {
   if (value === undefined || value === '') return null;
