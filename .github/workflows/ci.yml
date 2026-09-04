@@ -7,7 +7,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   validate:
@@ -60,3 +60,27 @@ jobs:
             test-results/recommendations-*.png
           if-no-files-found: ignore
           retention-days: 7
+
+      - name: Publish browser assets
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          JS_FILE="$(basename "$(find dist/assets -maxdepth 1 -type f -name 'index-*.js' ! -name '*.map' | head -n 1)")"
+          CSS_FILE="$(basename "$(find dist/assets -maxdepth 1 -type f -name 'index-*.css' | head -n 1)")"
+          printf '{"js":"%s","css":"%s","sha":"%s"}\n' "$JS_FILE" "$CSS_FILE" "$GITHUB_SHA" > dist/latest.json
+          rm -f dist/assets/*.map
+          rm -rf /tmp/starshiy-brat-deploy
+          mkdir -p /tmp/starshiy-brat-deploy
+          cp -R dist/. /tmp/starshiy-brat-deploy/
+          cd /tmp/starshiy-brat-deploy
+          git init
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b deploy-assets
+          git remote add origin "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          touch .nojekyll
+          git add -A
+          git commit -m "deploy: ${GITHUB_SHA}"
+          git push --force origin deploy-assets
