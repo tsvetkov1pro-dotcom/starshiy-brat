@@ -13,6 +13,7 @@ export interface ImportProfilesInput {
   sourceLastModified?: number;
   parsedMessageCount: number;
   parserVersion: string;
+  classificationVersion?: string;
   importedAt?: string;
   missingProfilePolicy?: MissingProfilePolicy;
 }
@@ -83,8 +84,7 @@ export async function importProfilesTransactionally(
         await database.profiles.bulkDelete(missingIds);
       }
 
-      const totalStored =
-        input.profiles.length + (missingProfilePolicy === 'keep' ? missingIds.length : 0);
+      const totalStored = input.profiles.length + (missingProfilePolicy === 'keep' ? missingIds.length : 0);
 
       const importMeta: ImportMeta = {
         id: 'current',
@@ -101,7 +101,15 @@ export async function importProfilesTransactionally(
 
       await database.importMeta.put(importMeta);
 
-      if (inserted > 0 || updated > 0 || (missingProfilePolicy === 'delete' && missingIds.length > 0)) {
+      if (input.classificationVersion) {
+        await database.classificationMeta.put({
+          id: 'current',
+          status: 'ready',
+          version: input.classificationVersion,
+          updatedAt: importedAt,
+          profileCount: totalStored,
+        });
+      } else if (inserted > 0 || updated > 0 || (missingProfilePolicy === 'delete' && missingIds.length > 0)) {
         await database.classificationMeta.put({
           id: 'current',
           status: 'pending',

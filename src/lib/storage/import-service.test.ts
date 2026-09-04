@@ -20,7 +20,7 @@ const profileHtml = `<!doctype html><html><body>
     <div class="body">
       <div class="pull_right date details" title="04.09.2026 12:00:00 UTC+03:00"></div>
       <div class="from_name">Иван Петров</div>
-      <div class="text">1. Иван Петров<br>2. Санкт-Петербург<br>3. 34 года<br>4. Производство<br>5. Поиск клиентов<br>6. Семья<br>7. Вырастить бизнес<br>8. Могу помочь с производством</div>
+      <div class="text">1. Иван Петров<br>2. Санкт-Петербург<br>3. 34 года<br>4. Производство<br>5. Поиск клиентов<br>6. Семья<br>7. Вырастить бизнес<br>8. Могу помочь с производством и B2B продажами</div>
     </div>
   </div>
 </body></html>`;
@@ -36,7 +36,7 @@ describe('Telegram import service', () => {
     await database.delete();
   });
 
-  it('parses and stores a valid Telegram export', async () => {
+  it('parses, classifies and stores a valid Telegram export', async () => {
     const result = await importTelegramHtml(
       profileHtml,
       {
@@ -48,12 +48,19 @@ describe('Telegram import service', () => {
     );
 
     expect(result.parsed.profiles).toHaveLength(1);
+    expect(result.profiles[0]?.domains).toEqual(expect.arrayContaining(['Производство', 'Продажи']));
+    expect(result.profiles[0]?.challenges).toContain('Поиск клиентов');
     expect(result.stats.inserted).toBe(1);
     expect(await database.profiles.count()).toBe(1);
     expect(await database.importMeta.get('current')).toMatchObject({
       sourceName: 'messages.html',
       parserVersion: '2.0.0',
       parsedMessageCount: 1,
+      profileCount: 1,
+    });
+    expect(await database.classificationMeta.get('current')).toMatchObject({
+      status: 'ready',
+      version: '1.0.0',
       profileCount: 1,
     });
   });
