@@ -6,6 +6,13 @@
 
   .dashboard-grid > .panel--self {
     z-index: 1;
+    pointer-events: none;
+  }
+
+  .dashboard-grid > .panel--self select,
+  .dashboard-grid > .panel--self a,
+  .dashboard-grid > .panel--self button {
+    pointer-events: auto;
   }
 
   .dashboard-grid > .panel--recommendations {
@@ -15,11 +22,12 @@
   .panel--recommendations .panel__heading--row {
     position: relative;
     z-index: 3;
+    pointer-events: none;
   }
 
   .recommendation-refresh {
     position: relative;
     z-index: 4;
-    pointer-events: auto;
+    pointer-events: auto !important;
   }
 }
