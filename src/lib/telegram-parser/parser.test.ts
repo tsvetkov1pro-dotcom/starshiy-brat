@@ -24,7 +24,7 @@ const message = ({
       <div class="pull_right date details" title="15.06.2026 10:22:43 UTC+03:00">10:22</div>
       ${author ? `<div class="from_name">${author}</div>` : ''}
       ${media}
-      <div class="text">${text}</div>
+      ${text ? `<div class="text">${text}</div>` : ''}
     </div>
   </div>`;
 
@@ -132,6 +132,26 @@ describe('Telegram parser', () => {
       status: '960×1280, 83.1 KB',
     });
     expect(result.profiles[0]?.realImageReference).toBe('photos/photo_1.jpg');
+  });
+
+  it('handles a photo-first message followed by a joined profile and age inside field 1', () => {
+    const photo = `<div class="media_wrap"><a class="photo_wrap clearfix pull_left" href="photos/kirill.jpg"><img class="photo" src="photos/kirill_thumb.jpg"></a></div>`;
+    const html = wrap(
+      message({ id: '80', author: 'KIRILL ORLOV', media: photo, text: '' }) +
+        message({
+          id: '81',
+          joined: true,
+          text: '1. Кирилл Орлов, 32 года<br>2. Санкт-Петербург<br>4. Предприниматель<br>5. Масштабирование<br>6. Семья<br>7. Запуск продукта<br>8. Продажи',
+        }),
+    );
+
+    const result = parseTelegramExport(html);
+    const profile = result.profiles[0];
+
+    expect(profile?.name).toBe('Кирилл Орлов');
+    expect(profile?.age).toBe(32);
+    expect(profile?.realImageReference).toBe('photos/kirill.jpg');
+    expect(profile?.sourceMessageId).toBe('80');
   });
 
   it('deduplicates repeated profiles by participant identity and keeps IDs stable', () => {
