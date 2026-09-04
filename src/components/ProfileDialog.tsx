@@ -51,7 +51,8 @@ export function ProfileDialog({
 
   if (!profile) return null;
   const title = getProfileDisplayName(profile);
-  const contact = profile.telegramUsername ? `@${profile.telegramUsername}` : title;
+  const telegramUsername = profile.telegramUsername?.trim();
+  const contact = telegramUsername ? `@${telegramUsername}` : title;
 
   async function copyContact() {
     try {
@@ -98,17 +99,17 @@ export function ProfileDialog({
           <Field label="Возраст" value={profile.age ? `${profile.age} лет` : undefined} />
         </section>
 
-        <section className="telegram-contact" aria-label="Telegram">
+        <section className="telegram-contact" aria-label={telegramUsername ? 'Telegram' : 'Контакт'}>
           <div>
-            <span>Telegram</span>
-            <strong>{profile.telegramUsername ? `@${profile.telegramUsername}` : 'Username не указан'}</strong>
+            <span>{telegramUsername ? 'Telegram' : 'Имя для поиска в чате'}</span>
+            <strong>{contact}</strong>
           </div>
           <button className="button button--secondary" type="button" onClick={copyContact}>
             {copied ? <Check size={16} /> : <Copy size={16} />}
-            {copied ? 'Скопировано' : profile.telegramUsername ? 'Скопировать ник' : 'Скопировать имя'}
+            {copied ? 'Скопировано' : telegramUsername ? 'Скопировать ник' : 'Скопировать имя'}
           </button>
-          {profile.telegramUsername && (
-            <a className="button button--primary" href={`https://t.me/${profile.telegramUsername}`} target="_blank" rel="noreferrer">
+          {telegramUsername && (
+            <a className="button button--primary" href={`https://t.me/${telegramUsername}`} target="_blank" rel="noreferrer">
               Открыть в Telegram <ExternalLink size={15} />
             </a>
           )}
