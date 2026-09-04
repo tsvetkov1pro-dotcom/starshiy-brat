@@ -1,3 +1,15 @@
+/* Final QA adjustments after visual inspection. */
+.dashboard-grid { align-items: start; }
+.panel--self { min-height: 0; padding: 16px; }
+.panel--self .panel__heading { margin-bottom: 10px; }
+.self-summary { margin-top: 10px; }
+.self-summary__person { padding: 0; }
+.compact-preferences { display: none; }
+.panel--recommendations { min-height: 0; align-self: start; }
+.recommendation-grid { align-items: stretch; }
+
 @media (max-width: 900px) {
   .profile-sheet { top: auto; bottom: 0; left: 0; right: 0; }
+  .panel--self { padding: 14px; }
+  .self-summary { margin-top: 12px; }
 }
