@@ -1,15 +1,12 @@
-import { Crown } from 'lucide-react';
+import { BRAND_LOGO } from '../assets/brand/logo';
 
 export function BrandLogo({ compact = false }: { compact?: boolean; inverse?: boolean }) {
   return (
-    <span
-      className={`brand-wordmark${compact ? ' brand-wordmark--compact' : ''}`}
-      aria-label="Старший Брат"
-      role="img"
-    >
-      <Crown className="brand-wordmark__crown" aria-hidden="true" />
-      <span className="brand-wordmark__top">СТАРШИЙ</span>
-      <span className="brand-wordmark__bottom">БРАТ</span>
-    </span>
+    <img
+      className={`brand-wordmark brand-wordmark--image${compact ? ' brand-wordmark--compact' : ''}`}
+      src={BRAND_LOGO}
+      alt="Старший Брат"
+      draggable={false}
+    />
   );
 }
