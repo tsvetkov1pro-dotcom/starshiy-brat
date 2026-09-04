@@ -11,5 +11,8 @@ describe('application shell', () => {
     expect(screen.getByText('Подобрано для тебя')).toBeInTheDocument();
     expect(screen.getByText('Сферы сообщества')).toBeInTheDocument();
     expect(screen.getByRole('textbox', { name: 'Поиск' })).toBeInTheDocument();
+
+    // Wait for the async IndexedDB bootstrap to settle before jsdom teardown.
+    expect(await screen.findByText(/Сначала импортируй визитки сообщества/i)).toBeInTheDocument();
   });
 });
