@@ -1,5 +1,6 @@
-import { Home, Search, Users, Boxes, Compass, Upload, type LucideIcon } from 'lucide-react';
+import { Boxes, Compass, Home, Search, Upload, Users, type LucideIcon } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
+import { BRAND_LOGO } from '../../assets/brand/logo';
 
 type NavItem = { to: string; label: string; icon: LucideIcon };
 
@@ -11,23 +12,25 @@ const desktopItems: NavItem[] = [
   { to: '/challenges', label: 'Похожие вызовы', icon: Compass },
 ];
 
-const mobileItems = desktopItems.slice(0, 3).concat(desktopItems[4]);
+const mobileItems = [desktopItems[0], desktopItems[1], desktopItems[2], desktopItems[4]];
 
 function Brand() {
   return (
-    <div className="brand" aria-label="Старший Брат">
-      <div className="brand__mark">СБ</div>
-      <div>
-        <strong>СТАРШИЙ БРАТ</strong>
-        <span>Навигатор по сообществу</span>
-      </div>
-    </div>
+    <NavLink to="/" className="brand" aria-label="Старший Брат — на главную">
+      <img className="brand__logo" src={BRAND_LOGO} alt="Старший Брат" />
+      <span>Навигатор по сообществу</span>
+    </NavLink>
   );
 }
 
 function NavItems({ items }: { items: NavItem[] }) {
   return items.map(({ to, label, icon: Icon }) => (
-    <NavLink key={to} to={to} end={to === '/'} className={({ isActive }) => `nav-link${isActive ? ' is-active' : ''}`}>
+    <NavLink
+      key={to}
+      to={to}
+      end={to === '/'}
+      className={({ isActive }) => `nav-link${isActive ? ' is-active' : ''}`}
+    >
       <Icon size={19} strokeWidth={1.8} aria-hidden="true" />
       <span>{label}</span>
     </NavLink>
@@ -39,8 +42,13 @@ export function AppShell() {
     <div className="app-shell">
       <aside className="sidebar">
         <Brand />
-        <nav className="sidebar__nav" aria-label="Основная навигация"><NavItems items={desktopItems} /></nav>
-        <NavLink to="/import" className={({ isActive }) => `nav-link sidebar__import${isActive ? ' is-active' : ''}`}>
+        <nav className="sidebar__nav" aria-label="Основная навигация">
+          <NavItems items={desktopItems} />
+        </nav>
+        <NavLink
+          to="/import"
+          className={({ isActive }) => `nav-link sidebar__import${isActive ? ' is-active' : ''}`}
+        >
           <Upload size={19} strokeWidth={1.8} aria-hidden="true" />
           <span>Импорт чата</span>
         </NavLink>
@@ -48,7 +56,9 @@ export function AppShell() {
 
       <main className="main-content"><Outlet /></main>
 
-      <nav className="mobile-nav" aria-label="Мобильная навигация"><NavItems items={mobileItems} /></nav>
+      <nav className="mobile-nav" aria-label="Мобильная навигация">
+        <NavItems items={mobileItems} />
+      </nav>
     </div>
   );
 }
