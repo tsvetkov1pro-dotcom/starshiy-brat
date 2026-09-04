@@ -1,5 +1,5 @@
 import { Search, Sparkles } from 'lucide-react';
-import { useId, useMemo, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
 import { getSearchSuggestions, type SearchSuggestion } from '../lib/search-engine';
 import type { Profile } from '../types/profile';
 
@@ -30,11 +30,12 @@ export function SearchBox({
   className = '',
 }: SearchBoxProps) {
   const listboxId = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
   const [focused, setFocused] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
   const suggestions = useMemo(() => getSearchSuggestions(profiles, value, 8), [profiles, value]);
-  const open = focused && !dismissed && value.trim().length >= 2 && suggestions.length > 0;
+  const open = focused && !dismissed && value.trim().length >= 1 && suggestions.length > 0;
 
   function selectSuggestion(suggestion: SearchSuggestion) {
     onChange(suggestion.value);
@@ -72,9 +73,19 @@ export function SearchBox({
 
   return (
     <form className={`smart-search ${className}`.trim()} onSubmit={submit} role="search">
-      <div className="smart-search__bar">
+      <div
+        className="smart-search__bar"
+        onPointerDown={(event) => {
+          if ((event.target as HTMLElement).closest('button')) return;
+          if (document.activeElement !== inputRef.current) {
+            event.preventDefault();
+            inputRef.current?.focus();
+          }
+        }}
+      >
         <Search size={20} strokeWidth={1.8} aria-hidden="true" />
         <input
+          ref={inputRef}
           aria-label="Поиск"
           aria-autocomplete="list"
           aria-controls={listboxId}
