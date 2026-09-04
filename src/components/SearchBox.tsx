@@ -1,5 +1,5 @@
 import { Search, Sparkles } from 'lucide-react';
-import { useId, useMemo, useState } from 'react';
+import { useId, useMemo, useState, type CSSProperties } from 'react';
 import { getSearchSuggestions, type SearchSuggestion } from '../lib/search-engine';
 import type { Profile } from '../types/profile';
 
@@ -11,6 +11,8 @@ interface SearchBoxProps {
   placeholder?: string;
   buttonLabel?: string;
   className?: string;
+  style?: CSSProperties;
+  barStyle?: CSSProperties;
 }
 
 const typeLabel: Record<SearchSuggestion['type'], string> = {
@@ -28,6 +30,8 @@ export function SearchBox({
   placeholder = 'Кого ищешь? Например: IT, продажи, стройка…',
   buttonLabel,
   className = '',
+  style,
+  barStyle,
 }: SearchBoxProps) {
   const listboxId = useId();
   const [focused, setFocused] = useState(false);
@@ -76,8 +80,8 @@ export function SearchBox({
   }
 
   return (
-    <form className={`smart-search ${className}`.trim()} onSubmit={submit} role="search">
-      <div className="smart-search__bar">
+    <form className={`smart-search ${className}`.trim()} style={style} onSubmit={submit} role="search">
+      <div className="smart-search__bar" style={barStyle}>
         <Search className="smart-search__icon" size={21} strokeWidth={1.75} aria-hidden="true" />
         <input
           aria-label="Поиск"
