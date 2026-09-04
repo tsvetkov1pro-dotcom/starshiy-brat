@@ -50,6 +50,7 @@ export function HomePage() {
   const [query, setQuery] = useState('');
   const [openedProfile, setOpenedProfile] = useState<Profile>();
   const [refreshSeed, setRefreshSeed] = useState(0);
+  const [editingSelf, setEditingSelf] = useState(false);
 
   const selectedSelf = profiles.find((profile) => profile.id === selectedSelfId);
   const favorites = profiles.filter((profile) => favoriteProfileIds.includes(profile.id)).slice(0, 6);
@@ -80,6 +81,18 @@ export function HomePage() {
     navigate(trimmed ? `/find?q=${encodeURIComponent(trimmed)}` : '/find');
   }
 
+  function chooseSelf(profileId?: string) {
+    if (!profileId) return;
+    selectSelf(profileId);
+    setRefreshSeed(0);
+    setEditingSelf(false);
+  }
+
+  const sortedProfiles = useMemo(
+    () => profiles.slice().sort((a, b) => getProfileDisplayName(a).localeCompare(getProfileDisplayName(b), 'ru')),
+    [profiles],
+  );
+
   return (
     <div className="home-page">
       <HeroBanner />
@@ -91,39 +104,45 @@ export function HomePage() {
         onSearch={search}
         className="search-bridge"
         placeholder="Кого ищешь? Например: IT, продажи, стройка…"
-        buttonLabel="Найти брата"
       />
 
       <div className="home-stack">
         <section className="dashboard-grid">
           <article className="panel panel--self">
-            <div className="panel__heading"><h2>Выберите себя</h2></div>
+            <div className="panel__heading">
+              <h2>{selectedSelf && !editingSelf ? 'Это Вы' : 'Выберите себя'}</h2>
+              {selectedSelf && !editingSelf && (
+                <button className="self-change" type="button" onClick={() => setEditingSelf(true)}>Сменить</button>
+              )}
+            </div>
             {!ready ? <p className="muted">Загружаю локальную базу…</p> : profiles.length === 0 ? (
               <div className="self-empty">
                 <p>Сначала импортируй визитки сообщества.</p>
                 <Link className="button button--secondary" to="/import">Импортировать чат</Link>
               </div>
+            ) : selectedSelf && !editingSelf ? (
+              <button className="self-selected" type="button" onClick={() => setOpenedProfile(selectedSelf)}>
+                <ProfileAvatar profile={selectedSelf} />
+                <span className="self-selected__body">
+                  <strong>{getProfileDisplayName(selectedSelf)}</strong>
+                  <small>{[selectedSelf.occupation, selectedSelf.city].filter(Boolean).join(' · ') || 'Участник сообщества'}</small>
+                  <span>Профиль выбран и сохранён</span>
+                </span>
+              </button>
             ) : (
-              <>
+              <div className="self-picker">
+                <p>{selectedSelf ? 'Выберите другой профиль.' : 'Найдите себя один раз — выбор сохранится на этом устройстве.'}</p>
                 <label className="self-select">
                   <span className="sr-only">Выберите свою визитку</span>
-                  <select value={selectedSelfId ?? ''} onChange={(event) => { selectSelf(event.target.value || undefined); setRefreshSeed(0); }}>
+                  <select value={selectedSelfId ?? ''} onChange={(event) => chooseSelf(event.target.value || undefined)}>
                     <option value="">Найти себя в базе…</option>
-                    {profiles.slice().sort((a, b) => getProfileDisplayName(a).localeCompare(getProfileDisplayName(b), 'ru')).map((profile) => (
+                    {sortedProfiles.map((profile) => (
                       <option value={profile.id} key={profile.id}>{getProfileDisplayName(profile)}{profile.city ? ` · ${profile.city}` : ''}</option>
                     ))}
                   </select>
                 </label>
-                {selectedSelf ? (
-                  <button className="self-summary__person" type="button" onClick={() => setOpenedProfile(selectedSelf)}>
-                    <ProfileAvatar profile={selectedSelf} />
-                    <div>
-                      <strong>{getProfileDisplayName(selectedSelf)}</strong>
-                      <span>{[selectedSelf.occupation, selectedSelf.city].filter(Boolean).join(' · ') || 'Участник сообщества'}</span>
-                    </div>
-                  </button>
-                ) : <p className="muted self-hint">Выбери свою визитку — рекомендации станут персональными.</p>}
-              </>
+                {selectedSelf && <button className="self-cancel" type="button" onClick={() => setEditingSelf(false)}>Отмена</button>}
+              </div>
             )}
           </article>
 
