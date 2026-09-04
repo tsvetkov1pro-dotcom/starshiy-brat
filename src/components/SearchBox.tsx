@@ -26,14 +26,14 @@ export function SearchBox({
   onChange,
   onSearch,
   placeholder = 'Кого ищешь? Например: IT, продажи, стройка…',
-  buttonLabel = 'Найти брата',
+  buttonLabel,
   className = '',
 }: SearchBoxProps) {
   const listboxId = useId();
   const [focused, setFocused] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const suggestions = useMemo(() => getSearchSuggestions(profiles, value, 8), [profiles, value]);
+  const suggestions = useMemo(() => getSearchSuggestions(profiles, value, 10), [profiles, value]);
   const open = focused && !dismissed && value.trim().length >= 2 && suggestions.length > 0;
 
   function selectSuggestion(suggestion: SearchSuggestion) {
@@ -51,6 +51,7 @@ export function SearchBox({
     }
     const trimmed = value.trim();
     setDismissed(true);
+    setActiveIndex(-1);
     onSearch(trimmed);
   }
 
@@ -59,11 +60,15 @@ export function SearchBox({
       if (!open) return;
       event.preventDefault();
       setActiveIndex((current) => Math.min(suggestions.length - 1, current + 1));
-    } else if (event.key === 'ArrowUp') {
+      return;
+    }
+    if (event.key === 'ArrowUp') {
       if (!open) return;
       event.preventDefault();
       setActiveIndex((current) => Math.max(-1, current - 1));
-    } else if (event.key === 'Escape') {
+      return;
+    }
+    if (event.key === 'Escape') {
       event.preventDefault();
       setDismissed(true);
       setActiveIndex(-1);
@@ -73,7 +78,7 @@ export function SearchBox({
   return (
     <form className={`smart-search ${className}`.trim()} onSubmit={submit} role="search">
       <div className="smart-search__bar">
-        <Search size={20} strokeWidth={1.8} aria-hidden="true" />
+        <Search className="smart-search__icon" size={21} strokeWidth={1.75} aria-hidden="true" />
         <input
           aria-label="Поиск"
           aria-autocomplete="list"
@@ -91,14 +96,14 @@ export function SearchBox({
           onBlur={() => window.setTimeout(() => setFocused(false), 120)}
           onKeyDown={keyDown}
         />
-        <button className="button button--primary smart-search__submit" type="submit">{buttonLabel}</button>
+        {buttonLabel && <button className="button button--primary smart-search__submit" type="submit">{buttonLabel}</button>}
       </div>
 
       {open && (
         <div className="search-assistant" id={listboxId} role="listbox" aria-label="Подсказки поиска">
           <div className="search-assistant__head">
             <Sparkles size={15} aria-hidden="true" />
-            <span>Поиск понимает словоформы и связанные понятия</span>
+            <span>Ищу по именам, сферам, компетенциям, задачам и всему тексту визиток</span>
           </div>
           <div className="search-assistant__list">
             {suggestions.map((suggestion, index) => (
