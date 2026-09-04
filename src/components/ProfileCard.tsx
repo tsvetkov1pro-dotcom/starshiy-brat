@@ -29,7 +29,10 @@ export function ProfileCard({
   const meta = [metaPrimary, profile.city].filter(Boolean).join(' · ') || 'Участник сообщества';
 
   return (
-    <article className={`profile-card profile-card--${variant}`}>
+    <article
+      className={`profile-card profile-card--${variant}`}
+      style={variant === 'result' ? { minHeight: 132 } : undefined}
+    >
       <button
         className="icon-button profile-card__star"
         type="button"
