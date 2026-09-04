@@ -1,4 +1,5 @@
 import type { Profile } from '../../types/profile';
+import { normalizeProfile } from '../profile-normalization';
 import {
   db,
   type ImportMeta,
@@ -80,12 +81,9 @@ export async function importProfilesTransactionally(
         .map((profile) => profile.id);
 
       if (input.profiles.length > 0) await database.profiles.bulkPut(input.profiles);
-      if (missingProfilePolicy === 'delete' && missingIds.length > 0) {
-        await database.profiles.bulkDelete(missingIds);
-      }
+      if (missingProfilePolicy === 'delete' && missingIds.length > 0) await database.profiles.bulkDelete(missingIds);
 
       const totalStored = input.profiles.length + (missingProfilePolicy === 'keep' ? missingIds.length : 0);
-
       const importMeta: ImportMeta = {
         id: 'current',
         importedAt,
@@ -142,7 +140,7 @@ export async function importProfilesTransactionally(
 }
 
 export async function getProfiles(database: StarshiyBratDatabase = db): Promise<Profile[]> {
-  return database.profiles.toArray();
+  return (await database.profiles.toArray()).map(normalizeProfile);
 }
 
 export async function getImportMeta(database: StarshiyBratDatabase = db) {

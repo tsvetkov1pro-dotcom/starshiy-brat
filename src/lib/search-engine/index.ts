@@ -1,2 +1,17 @@
-export { searchInternals, searchProfiles } from './search';
-export type { SearchField, SearchMatchReason, SearchOptions, SearchResult } from './search';
+export {
+  findProfileExcerptForTerms,
+  getRelatedSearchTerms,
+  getSearchSuggestions,
+  searchInternals,
+  searchProfiles,
+  shouldHighlightToken,
+} from './search';
+export type {
+  SearchExcerpt,
+  SearchField,
+  SearchMatchReason,
+  SearchOptions,
+  SearchResult,
+  SearchSuggestion,
+  SearchSuggestionType,
+} from './search';

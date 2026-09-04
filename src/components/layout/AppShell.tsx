@@ -1,5 +1,6 @@
-import { Home, Search, Users, Boxes, Compass, Upload, type LucideIcon } from 'lucide-react';
+import { Boxes, Compass, Home, Search, Upload, Users, type LucideIcon } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
+import { BrandLogo } from '../BrandLogo';
 
 type NavItem = { to: string; label: string; icon: LucideIcon };
 
@@ -11,17 +12,14 @@ const desktopItems: NavItem[] = [
   { to: '/challenges', label: 'Похожие вызовы', icon: Compass },
 ];
 
-const mobileItems = desktopItems.slice(0, 3).concat(desktopItems[4]);
+const mobileItems = [desktopItems[0], desktopItems[1], desktopItems[2], desktopItems[4]];
 
 function Brand() {
   return (
-    <div className="brand" aria-label="Старший Брат">
-      <div className="brand__mark">СБ</div>
-      <div>
-        <strong>СТАРШИЙ БРАТ</strong>
-        <span>Навигатор по сообществу</span>
-      </div>
-    </div>
+    <NavLink to="/" className="brand" aria-label="Старший Брат — на главную">
+      <BrandLogo />
+      <span>Навигатор по сообществу</span>
+    </NavLink>
   );
 }
 
@@ -45,9 +43,7 @@ export function AppShell() {
           <span>Импорт чата</span>
         </NavLink>
       </aside>
-
       <main className="main-content"><Outlet /></main>
-
       <nav className="mobile-nav" aria-label="Мобильная навигация"><NavItems items={mobileItems} /></nav>
     </div>
   );

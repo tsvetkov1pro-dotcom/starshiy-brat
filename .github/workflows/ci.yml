@@ -39,3 +39,16 @@ jobs:
 
       - name: E2E tests
         run: npm run e2e
+
+      - name: Upload visual QA screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visual-qa
+          path: |
+            test-results/visual-*.png
+            test-results/search-*.png
+            test-results/profile-*.png
+            test-results/recommendations-*.png
+          if-no-files-found: ignore
+          retention-days: 7
