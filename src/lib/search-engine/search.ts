@@ -39,9 +39,9 @@ const STOP_WORDS = new Set([
 ]);
 
 const SUFFIXES = [
-  'иями', 'ями', 'ами', 'иями', 'ого', 'ему', 'ому', 'ыми', 'ими', 'иях', 'ах', 'ях',
-  'ение', 'ения', 'ений', 'ировать', 'ировать', 'овать', 'евой', 'овой', 'евый', 'овый',
-  'ами', 'ями', 'ов', 'ев', 'ий', 'ый', 'ой', 'ая', 'яя', 'ое', 'ее', 'ом', 'ем', 'ам', 'ям',
+  'иями', 'ями', 'ами', 'ого', 'ему', 'ому', 'ыми', 'ими', 'иях', 'ах', 'ях',
+  'ение', 'ения', 'ений', 'ировать', 'овать', 'евой', 'овой', 'евый', 'овый',
+  'ов', 'ев', 'ий', 'ый', 'ой', 'ая', 'яя', 'ое', 'ее', 'ом', 'ем', 'ам', 'ям',
   'у', 'ю', 'а', 'я', 'ы', 'и', 'е',
 ].sort((a, b) => b.length - a.length);
 
@@ -52,8 +52,9 @@ const ALIASES: Record<string, string[]> = {
   ии: ['ai', 'ии'],
   нейронки: ['нейросет'],
   клиенты: ['клиент'],
-  клиентов: ['клиент'],
+  клиент: ['клиент'],
   продажами: ['продаж'],
+  продаж: ['продаж'],
 };
 
 function normalize(value: string): string {
@@ -78,17 +79,19 @@ function stem(token: string): string {
 }
 
 function tokenize(value: string, expandAliases = false): string[] {
-  const tokens = normalize(value)
-    .split(' ')
-    .filter(Boolean)
+  const rawTokens = normalize(value).split(' ').filter(Boolean);
+  const tokens = rawTokens
     .filter((token) => !STOP_WORDS.has(token))
     .map(stem);
 
   if (!expandAliases) return [...new Set(tokens)];
 
   const expanded = [...tokens];
-  for (const raw of normalize(value).split(' ').filter(Boolean)) {
-    for (const alias of ALIASES[raw] ?? []) expanded.push(stem(alias));
+  for (const raw of rawTokens) {
+    const aliasKeys = new Set([raw, stem(raw)]);
+    for (const key of aliasKeys) {
+      for (const alias of ALIASES[key] ?? []) expanded.push(stem(alias));
+    }
   }
   return [...new Set(expanded)];
 }
