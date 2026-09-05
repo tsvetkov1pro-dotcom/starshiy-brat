@@ -180,6 +180,7 @@ function tokenMatches(stemmedWord: string, candidates: Iterable<string>): boolea
   for (const candidate of candidates) {
     if (stemmedWord === candidate) return true;
     if (stemmedWord.length >= 4 && candidate.length >= 4 && stemmedWord.startsWith(candidate)) return true;
+    if (candidate.length >= 3 && /^[0-9]/.test(stemmedWord) && stemmedWord.endsWith(candidate)) return true;
   }
   return false;
 }
@@ -441,3 +442,4 @@ export function searchProfilesByName(profiles: Profile[], query: string): Profil
     return tokens.every(token => words.some(word => word === token || (token.length >= 2 && word.startsWith(token))));
   }).sort((a,b) => getProfileDisplayName(a).localeCompare(getProfileDisplayName(b), 'ru'));
 }
+
