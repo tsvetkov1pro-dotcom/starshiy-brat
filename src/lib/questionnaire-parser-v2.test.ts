@@ -2,6 +2,11 @@ import { parseQuestionnaireV2, reparseProfileV2, PROFILE_PARSER_VERSION } from '
 import type { Profile } from '../types/profile';
 
 describe('questionnaire parser v2', () => {
+  it('removes the field label from a free-form help statement', () => {
+    expect(parseQuestionnaireV2('Зовут Сергей, 43 года.\nМогу быть полезен: стратегия и маркетинг, упаковка продукта.').canHelpWith)
+      .toBe('стратегия и маркетинг, упаковка продукта.');
+  });
+
   it('maps the canonical 1-8 questionnaire to stable semantic fields', () => {
     const parsed = parseQuestionnaireV2(`
 1. Константин Петров
