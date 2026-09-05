@@ -1,5 +1,5 @@
 import type { Profile } from '../../types/profile';
-import { extractProfileName, cleanProfileName } from '../profile-normalization';
+import { extractFreeFormProfileFields, extractProfileName, cleanProfileName } from '../profile-normalization';
 import type {
   ParsedTelegramMessage,
   TelegramAttachment,
@@ -316,9 +316,16 @@ function buildProfile(messages: ParsedTelegramMessage[], warnings: TelegramParse
 
   const rawProfileText = profileMessages.map((message) => message.text).filter(Boolean).join('\n\n');
   const fields = segmentQuestionnaire(rawProfileText);
+  const freeForm = extractFreeFormProfileFields(rawProfileText);
   const username = profileMessages.find((message) => message.authorUsername)?.authorUsername;
   const name = extractProfileName(rawProfileText) ?? cleanProfileName(fields.get(1)) ?? fallbackName(rawProfileText);
-  const age = parseAge(fields.get(3)) ?? parseAge(fields.get(1)) ?? fallbackAge(rawProfileText);
+  const age = parseAge(fields.get(3)) ?? parseAge(fields.get(1)) ?? freeForm.age ?? fallbackAge(rawProfileText);
+  const city = fields.get(2) ?? freeForm.city;
+  const occupation = fields.get(4) ?? freeForm.occupation;
+  const currentChallenge = fields.get(5) ?? freeForm.currentChallenge;
+  const currentPriority = fields.get(6) ?? freeForm.currentPriority;
+  const goal90Days = fields.get(7) ?? freeForm.goal90Days;
+  const canHelpWith = fields.get(8) ?? freeForm.canHelpWith;
 
   if (fields.size === 0 && name === undefined && age === undefined) {
     warnings.push({
@@ -338,13 +345,13 @@ function buildProfile(messages: ParsedTelegramMessage[], warnings: TelegramParse
     telegramDisplayName: author,
     ...(username ? { telegramUsername: username } : {}),
     ...(name ? { name } : {}),
-    ...(fields.get(2) ? { city: fields.get(2) } : {}),
+    ...(city ? { city } : {}),
     ...(age !== undefined ? { age } : {}),
-    ...(fields.get(4) ? { occupation: fields.get(4) } : {}),
-    ...(fields.get(5) ? { currentChallenge: fields.get(5) } : {}),
-    ...(fields.get(6) ? { currentPriority: fields.get(6) } : {}),
-    ...(fields.get(7) ? { goal90Days: fields.get(7) } : {}),
-    ...(fields.get(8) ? { canHelpWith: fields.get(8) } : {}),
+    ...(occupation ? { occupation } : {}),
+    ...(currentChallenge ? { currentChallenge } : {}),
+    ...(currentPriority ? { currentPriority } : {}),
+    ...(goal90Days ? { goal90Days } : {}),
+    ...(canHelpWith ? { canHelpWith } : {}),
     domains: [],
     challenges: [],
     searchKeywords: [],
@@ -447,3 +454,4 @@ export const telegramParserInternals = {
   segmentQuestionnaire,
   telegramUsernameFromHref,
 };
+
