@@ -37,7 +37,7 @@ export function SearchBox({
   const [focused, setFocused] = useState(false);
   const [dismissed, setDismissed] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
-  const suggestions = useMemo(() => getSearchSuggestions(profiles, value, 10), [profiles, value]);
+  const suggestions = useMemo(() => getSearchSuggestions(profiles, value, 20), [profiles, value]);
   const open = focused && !dismissed && value.trim().length >= 2 && suggestions.length > 0;
 
   function selectSuggestion(suggestion: SearchSuggestion) {
@@ -118,7 +118,6 @@ export function SearchBox({
                 role="option"
                 aria-selected={index === activeIndex}
                 onMouseDown={(event) => event.preventDefault()}
-                onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => selectSuggestion(suggestion)}
               >
                 <span className="search-suggestion__type">{typeLabel[suggestion.type]}</span>

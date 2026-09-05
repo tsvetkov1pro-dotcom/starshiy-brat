@@ -1,5 +1,6 @@
 import { Star } from 'lucide-react';
 import { getProfileDisplayName } from '../lib/profile-normalization';
+import { getProfilePreviewText } from '../lib/profile-preview';
 import type { SearchExcerpt } from '../lib/search-engine';
 import type { Profile } from '../types/profile';
 import { HighlightText } from './HighlightText';
@@ -28,10 +29,11 @@ export function ProfileCard({
   const title = getProfileDisplayName(profile);
   const metaPrimary = profile.domains[0] && profile.domains[0] !== 'Другое' ? profile.domains[0] : profile.occupation;
   const meta = [metaPrimary, profile.city].filter(Boolean).join(' · ') || 'Участник сообщества';
+  const previewText = excerpt?.text ?? getProfilePreviewText(profile);
   const classes = [
     'profile-card',
     `profile-card--${variant}`,
-    excerpt ? 'profile-card--has-excerpt' : '',
+    previewText ? 'profile-card--has-excerpt' : '',
   ].filter(Boolean).join(' ');
 
   return (
@@ -55,10 +57,10 @@ export function ProfileCard({
           </span>
           <small className="profile-card__meta"><HighlightText text={meta} terms={highlightTerms} /></small>
           {reason && <span className="profile-card__reason"><HighlightText text={reason} terms={highlightTerms} /></span>}
-          {variant === 'result' && excerpt && (
+          {variant === 'result' && previewText && (
             <span className="profile-card__excerpt">
-              <span>{excerpt.label}</span>
-              <q><HighlightText text={excerpt.text} terms={highlightTerms} /></q>
+              {excerpt?.label && <span>{excerpt.label}</span>}
+              <q><HighlightText text={previewText} terms={highlightTerms} /></q>
             </span>
           )}
         </span>

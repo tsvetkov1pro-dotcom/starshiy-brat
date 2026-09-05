@@ -1,11 +1,14 @@
 export {
   findProfileExcerptForTerms,
   getRelatedSearchTerms,
-  getSearchSuggestions,
   searchInternals,
-  searchProfiles,
   shouldHighlightToken,
 } from './search';
+export {
+  getSearchSuggestions,
+  searchProfiles,
+  searchProfilesByName,
+} from './public-search';
 export type {
   SearchExcerpt,
   SearchField,

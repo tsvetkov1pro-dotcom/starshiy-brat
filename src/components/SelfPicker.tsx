@@ -1,6 +1,6 @@
 import { useId, useMemo, useState } from 'react';
 import { getProfileDisplayName } from '../lib/profile-normalization';
-import { searchProfilesByName } from '../lib/search-engine/search';
+import { searchProfilesByName } from '../lib/search-engine';
 import type { Profile } from '../types/profile';
 
 export function SelfPicker({ profiles, onSelect }: { profiles: Profile[]; onSelect: (id: string) => void }) {
@@ -11,7 +11,8 @@ export function SelfPicker({ profiles, onSelect }: { profiles: Profile[]; onSele
   const matches = useMemo(() => searchProfilesByName(profiles, query), [profiles, query]);
   const results = matches.slice(0, 30);
   const expanded = open && query.trim().length >= 2;
-  return <div className="self-picker" onBlur={event => { if (!event.currentTarget.contains(event.relatedTarget)) setOpen(false); }}>
+
+  return <div className="self-picker" onBlur={() => window.setTimeout(() => setOpen(false), 140)}>
     <label htmlFor={id}>Введите своё имя</label>
     <input id={id} role="combobox" autoComplete="off" placeholder="Например, Леонид"
       aria-expanded={expanded} aria-controls={`${id}-results`} aria-autocomplete="list"
@@ -32,6 +33,7 @@ export function SelfPicker({ profiles, onSelect }: { profiles: Profile[]; onSele
       <div id={`${id}-results`} role="listbox" aria-label="Визитки для выбора себя">
         {results.map((profile, index) => <button key={profile.id} id={`${id}-${index}`} type="button" role="option"
           aria-selected={active === index} onMouseEnter={() => setActive(index)}
+          onMouseDown={event => event.preventDefault()}
           onClick={() => onSelect(profile.id)}>
           <strong>{getProfileDisplayName(profile)}</strong>
           <span>{[profile.city, profile.occupation].filter(Boolean).join(' · ') || 'Участник сообщества'}</span>
