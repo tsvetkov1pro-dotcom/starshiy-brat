@@ -50,11 +50,12 @@ describe('Telegram import service', () => {
     expect(result.parsed.profiles).toHaveLength(1);
     expect(result.profiles[0]?.domains).toEqual(expect.arrayContaining(['Производство', 'Продажи']));
     expect(result.profiles[0]?.challenges).toContain('Поиск клиентов');
+    expect(result.profiles[0]?.parserVersion).toBe('3.0.0');
     expect(result.stats.inserted).toBe(1);
     expect(await database.profiles.count()).toBe(1);
     expect(await database.importMeta.get('current')).toMatchObject({
       sourceName: 'messages.html',
-      parserVersion: '2.0.0',
+      parserVersion: '3.0.0',
       parsedMessageCount: 1,
       profileCount: 1,
     });
