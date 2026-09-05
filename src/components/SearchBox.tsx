@@ -8,6 +8,7 @@ interface SearchBoxProps {
   value: string;
   onChange: (value: string) => void;
   onSearch: (value: string) => void;
+  onSelectPerson?: (profileId: string, sourceQuery: string) => void;
   placeholder?: string;
   buttonLabel?: string;
   className?: string;
@@ -27,6 +28,7 @@ export function SearchBox({
   value,
   onChange,
   onSearch,
+  onSelectPerson,
   placeholder = 'Кого ищешь? Например: IT, продажи, стройка…',
   buttonLabel,
   className = '',
@@ -39,11 +41,21 @@ export function SearchBox({
   const [activeIndex, setActiveIndex] = useState(-1);
   const suggestions = useMemo(() => getSearchSuggestions(profiles, value, 20), [profiles, value]);
   const open = focused && !dismissed && value.trim().length >= 2 && suggestions.length > 0;
+  const isDesktopViewport = typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(min-width: 901px)').matches;
+  const desktopInputStyle: CSSProperties | undefined = isDesktopViewport ? { lineHeight: '42px' } : undefined;
 
   function selectSuggestion(suggestion: SearchSuggestion) {
-    onChange(suggestion.value);
     setActiveIndex(-1);
     setDismissed(true);
+
+    if (isDesktopViewport && suggestion.type === 'person' && suggestion.profileId && onSelectPerson) {
+      onSelectPerson(suggestion.profileId, value.trim());
+      return;
+    }
+
+    onChange(suggestion.value);
     onSearch(suggestion.value);
   }
 
@@ -91,6 +103,7 @@ export function SearchBox({
           autoComplete="off"
           placeholder={placeholder}
           value={value}
+          style={desktopInputStyle}
           onChange={(event) => {
             onChange(event.target.value);
             setDismissed(false);

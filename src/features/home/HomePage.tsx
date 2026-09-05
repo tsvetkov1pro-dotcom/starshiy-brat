@@ -50,6 +50,7 @@ export function HomePage() {
   } = useAppData();
   const [query, setQuery] = useState('');
   const [openedProfile, setOpenedProfile] = useState<Profile>();
+  const [openedContextQuery, setOpenedContextQuery] = useState('');
   const [refreshSeed, setRefreshSeed] = useState(0);
   const [editingSelf, setEditingSelf] = useState(false);
   const [selfError, setSelfError] = useState('');
@@ -83,14 +84,21 @@ export function HomePage() {
     navigate(trimmed ? `/find?q=${encodeURIComponent(trimmed)}` : '/find');
   }
 
+  function openProfile(profile: Profile, contextQuery = '') {
+    setOpenedContextQuery(contextQuery);
+    setOpenedProfile(profile);
+  }
+
   function chooseSelf(profileId?: string) {
     if (!profileId) return;
-    if (!selectSelf(profileId)) { setSelfError('Не удалось сохранить выбор. Разрешите хранение данных для сайта и попробуйте ещё раз.'); return; }
+    if (!selectSelf(profileId)) {
+      setSelfError('Не удалось сохранить выбор. Разрешите хранение данных для сайта и попробуйте ещё раз.');
+      return;
+    }
     setSelfError('');
     setRefreshSeed(0);
     setEditingSelf(false);
   }
-
 
   return (
     <div className="home-page">
@@ -101,9 +109,11 @@ export function HomePage() {
         value={query}
         onChange={setQuery}
         onSearch={search}
+        onSelectPerson={(profileId, sourceQuery) => {
+          const profile = profiles.find((candidate) => candidate.id === profileId);
+          if (profile) openProfile(profile, sourceQuery);
+        }}
         className="search-bridge"
-        style={{ width: 'min(820px, calc(100% - 24px))' }}
-        barStyle={{ minHeight: 52 }}
         placeholder="Кого ищешь? Например: IT, продажи, стройка…"
       />
 
@@ -122,7 +132,7 @@ export function HomePage() {
                 <Link className="button button--secondary" to="/import">Импортировать чат</Link>
               </div>
             ) : selectedSelf && !editingSelf ? (
-              <button className="self-selected" type="button" onClick={() => setOpenedProfile(selectedSelf)}>
+              <button className="self-selected" type="button" onClick={() => openProfile(selectedSelf)}>
                 <ProfileAvatar profile={selectedSelf} />
                 <span className="self-selected__body">
                   <strong>{getProfileDisplayName(selectedSelf)}</strong>
@@ -159,7 +169,7 @@ export function HomePage() {
                   favorite={favoriteProfileIds.includes(profile.id)}
                   reason={recommendation.reasons[0]?.label ?? tierLabels[recommendation.tier]}
                   variant="compact"
-                  onOpen={() => setOpenedProfile(profile)}
+                  onOpen={() => openProfile(profile)}
                   onToggleFavorite={() => toggleFavorite(profile.id)}
                 />
               )) : [0, 1, 2, 3].map((index) => (
@@ -172,7 +182,7 @@ export function HomePage() {
         <section className="panel favorites-strip">
           <div className="section-heading"><h2>Мои братья <span>{favoriteProfileIds.length}</span></h2><Link to="/brothers">Смотреть всех <ArrowRight size={15} /></Link></div>
           {favorites.length > 0 ? <div className="favorite-row">{favorites.map((profile) => (
-            <button className="favorite-person" type="button" key={profile.id} onClick={() => setOpenedProfile(profile)}>
+            <button className="favorite-person" type="button" key={profile.id} onClick={() => openProfile(profile)}>
               <ProfileAvatar profile={profile} size="sm" /><span><strong>{getProfileDisplayName(profile)}</strong><small>{profile.domains[0] ?? profile.occupation ?? 'Участник'}</small></span>
             </button>
           ))}</div> : <p className="muted favorites-empty">Нажми на звезду в карточке — сохранённые братья появятся здесь.</p>}
@@ -213,7 +223,14 @@ export function HomePage() {
         </section>
       </div>
 
-      <ProfileDialog profile={openedProfile} favorite={openedProfile ? favoriteProfileIds.includes(openedProfile.id) : false} onClose={() => setOpenedProfile(undefined)} onToggleFavorite={() => openedProfile && toggleFavorite(openedProfile.id)} />
+      <ProfileDialog
+        profile={openedProfile}
+        favorite={openedProfile ? favoriteProfileIds.includes(openedProfile.id) : false}
+        highlightTerms={openedContextQuery ? [openedContextQuery] : []}
+        contextLabel={openedContextQuery ? `Найдено по запросу: ${openedContextQuery}` : undefined}
+        onClose={() => { setOpenedProfile(undefined); setOpenedContextQuery(''); }}
+        onToggleFavorite={() => openedProfile && toggleFavorite(openedProfile.id)}
+      />
     </div>
   );
 }

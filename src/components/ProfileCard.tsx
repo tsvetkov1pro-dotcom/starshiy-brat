@@ -7,6 +7,28 @@ import { HighlightText } from './HighlightText';
 import { ProfileAvatar } from './ProfileAvatar';
 import { CopyNameButton } from './CopyNameButton';
 
+function buildDesktopAboutLine(profile: Profile): string {
+  const domain = profile.domains.find((item) => item && item !== 'Другое')?.trim();
+  const occupation = profile.occupation?.trim();
+  const city = profile.city?.trim();
+  const parts = [domain, occupation, city].filter((value): value is string => Boolean(value));
+  const unique: string[] = [];
+
+  for (const part of parts) {
+    const normalized = part.toLowerCase().replace(/\s+/g, ' ').trim();
+    if (!normalized) continue;
+    if (unique.some((item) => item.toLowerCase().replace(/\s+/g, ' ').trim() === normalized)) continue;
+    unique.push(part);
+  }
+
+  return unique.join(' · ') || 'Участник сообщества';
+}
+
+function buildLegacyMeta(profile: Profile): string {
+  const metaPrimary = profile.domains[0] && profile.domains[0] !== 'Другое' ? profile.domains[0] : profile.occupation;
+  return [metaPrimary, profile.city].filter(Boolean).join(' · ') || 'Участник сообщества';
+}
+
 export function ProfileCard({
   profile,
   favorite,
@@ -27,13 +49,18 @@ export function ProfileCard({
   onToggleFavorite: () => void;
 }) {
   const title = getProfileDisplayName(profile);
-  const metaPrimary = profile.domains[0] && profile.domains[0] !== 'Другое' ? profile.domains[0] : profile.occupation;
-  const meta = [metaPrimary, profile.city].filter(Boolean).join(' · ') || 'Участник сообщества';
+  const isDesktopViewport = typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(min-width: 901px)').matches;
+  const isDesktopResult = variant === 'result' && isDesktopViewport;
+  const meta = isDesktopResult ? buildDesktopAboutLine(profile) : buildLegacyMeta(profile);
+  const helpText = profile.canHelpWith?.trim() || 'Не указано в визитке';
   const previewText = excerpt?.text ?? getProfilePreviewText(profile);
+  const hasExcerpt = isDesktopResult || Boolean(previewText);
   const classes = [
     'profile-card',
     `profile-card--${variant}`,
-    previewText ? 'profile-card--has-excerpt' : '',
+    hasExcerpt ? 'profile-card--has-excerpt' : '',
   ].filter(Boolean).join(' ');
 
   return (
@@ -56,13 +83,18 @@ export function ProfileCard({
             <CopyNameButton name={title} />
           </span>
           <small className="profile-card__meta"><HighlightText text={meta} terms={highlightTerms} /></small>
-          {reason && <span className="profile-card__reason"><HighlightText text={reason} terms={highlightTerms} /></span>}
-          {variant === 'result' && previewText && (
+          {!isDesktopResult && reason && <span className="profile-card__reason"><HighlightText text={reason} terms={highlightTerms} /></span>}
+          {isDesktopResult ? (
+            <span className="profile-card__excerpt">
+              <span>ЧЕМ МОЖЕТ ПОМОЧЬ</span>
+              <q><HighlightText text={helpText} terms={highlightTerms} /></q>
+            </span>
+          ) : variant === 'result' && previewText ? (
             <span className="profile-card__excerpt">
               {excerpt?.label && <span>{excerpt.label}</span>}
               <q><HighlightText text={previewText} terms={highlightTerms} /></q>
             </span>
-          )}
+          ) : null}
         </span>
       </div>
     </article>
