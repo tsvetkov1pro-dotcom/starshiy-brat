@@ -8,6 +8,7 @@ interface SearchBoxProps {
   value: string;
   onChange: (value: string) => void;
   onSearch: (value: string) => void;
+  onSelectPerson?: (profileId: string, sourceQuery: string) => void;
   placeholder?: string;
   buttonLabel?: string;
   className?: string;
@@ -27,6 +28,7 @@ export function SearchBox({
   value,
   onChange,
   onSearch,
+  onSelectPerson,
   placeholder = 'Кого ищешь? Например: IT, продажи, стройка…',
   buttonLabel,
   className = '',
@@ -41,9 +43,15 @@ export function SearchBox({
   const open = focused && !dismissed && value.trim().length >= 2 && suggestions.length > 0;
 
   function selectSuggestion(suggestion: SearchSuggestion) {
-    onChange(suggestion.value);
     setActiveIndex(-1);
     setDismissed(true);
+
+    if (suggestion.type === 'person' && suggestion.profileId && onSelectPerson) {
+      onSelectPerson(suggestion.profileId, value.trim());
+      return;
+    }
+
+    onChange(suggestion.value);
     onSearch(suggestion.value);
   }
 
@@ -118,6 +126,7 @@ export function SearchBox({
                 role="option"
                 aria-selected={index === activeIndex}
                 onMouseDown={(event) => event.preventDefault()}
+                onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => selectSuggestion(suggestion)}
               >
                 <span className="search-suggestion__type">{typeLabel[suggestion.type]}</span>
