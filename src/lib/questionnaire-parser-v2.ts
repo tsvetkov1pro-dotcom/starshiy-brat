@@ -233,7 +233,7 @@ function cleanHelpLabel(value: string): string {
   return value.replace(
     /^(?:могу\s+быть\s+полез(?:ен|на)|чем\s+могу\s+помочь|могу\s+помочь)\s*[:—–-]?\s*/i,
     '',
-  ).trim();
+  ).trim().replace(/[.,;:]+$/, '');
 }
 
 function inferHelp(rawText: string, segments: Segment[], freeHelp: string[]): string | undefined {
