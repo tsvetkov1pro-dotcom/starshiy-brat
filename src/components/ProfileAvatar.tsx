@@ -4,9 +4,10 @@ import type { Profile } from '../types/profile';
 
 const avatarFrameStyle: CSSProperties = {
   aspectRatio: '1 / 1',
-  overflow: 'visible',
+  overflow: 'hidden',
   border: 0,
-  borderRadius: 0,
+  borderRadius: '50%',
+  padding: 1,
   background: 'transparent',
   boxShadow: 'none',
   lineHeight: 0,
@@ -19,7 +20,7 @@ const avatarImageStyle: CSSProperties = {
   maxWidth: 'none',
   objectFit: 'contain',
   objectPosition: '50% 50%',
-  borderRadius: 0,
+  borderRadius: '50%',
   transform: 'none',
   filter: 'none',
   imageRendering: 'auto',
