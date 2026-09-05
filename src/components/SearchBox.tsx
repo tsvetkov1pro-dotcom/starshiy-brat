@@ -41,15 +41,16 @@ export function SearchBox({
   const [activeIndex, setActiveIndex] = useState(-1);
   const suggestions = useMemo(() => getSearchSuggestions(profiles, value, 20), [profiles, value]);
   const open = focused && !dismissed && value.trim().length >= 2 && suggestions.length > 0;
-  const desktopInputStyle: CSSProperties | undefined = typeof window !== 'undefined' && window.matchMedia('(min-width: 901px)').matches
-    ? { lineHeight: '42px' }
-    : undefined;
+  const isDesktopViewport = typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(min-width: 901px)').matches;
+  const desktopInputStyle: CSSProperties | undefined = isDesktopViewport ? { lineHeight: '42px' } : undefined;
 
   function selectSuggestion(suggestion: SearchSuggestion) {
     setActiveIndex(-1);
     setDismissed(true);
 
-    if (suggestion.type === 'person' && suggestion.profileId && onSelectPerson) {
+    if (isDesktopViewport && suggestion.type === 'person' && suggestion.profileId && onSelectPerson) {
       onSelectPerson(suggestion.profileId, value.trim());
       return;
     }
