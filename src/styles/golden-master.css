@@ -675,7 +675,7 @@ img {
   height: 100%;
   object-fit: cover;
   object-position: 50% 50%;
-  transform: scale(1.04);
+  transform: translate(-3%, -3%) scale(1.08);
   transform-origin: center;
 }
 
@@ -1879,3 +1879,4 @@ img {
   .profile-card--compact .profile-avatar--md { width: 48px; height: 48px; }
   .copy-name { flex-basis: 34px; width: 34px; height: 34px; }
 }
+
