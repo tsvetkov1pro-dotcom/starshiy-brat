@@ -7,7 +7,7 @@ import { HighlightText } from './HighlightText';
 import { ProfileAvatar } from './ProfileAvatar';
 import { CopyNameButton } from './CopyNameButton';
 
-function buildAboutLine(profile: Profile): string {
+function buildDesktopAboutLine(profile: Profile): string {
   const domain = profile.domains.find((item) => item && item !== 'Другое')?.trim();
   const occupation = profile.occupation?.trim();
   const city = profile.city?.trim();
@@ -22,6 +22,11 @@ function buildAboutLine(profile: Profile): string {
   }
 
   return unique.join(' · ') || 'Участник сообщества';
+}
+
+function buildLegacyMeta(profile: Profile): string {
+  const metaPrimary = profile.domains[0] && profile.domains[0] !== 'Другое' ? profile.domains[0] : profile.occupation;
+  return [metaPrimary, profile.city].filter(Boolean).join(' · ') || 'Участник сообщества';
 }
 
 export function ProfileCard({
@@ -44,13 +49,15 @@ export function ProfileCard({
   onToggleFavorite: () => void;
 }) {
   const title = getProfileDisplayName(profile);
-  const meta = buildAboutLine(profile);
+  const isDesktopResult = variant === 'result' && typeof window !== 'undefined' && window.matchMedia('(min-width: 901px)').matches;
+  const meta = isDesktopResult ? buildDesktopAboutLine(profile) : buildLegacyMeta(profile);
   const helpText = profile.canHelpWith?.trim() || 'Не указано в визитке';
   const previewText = excerpt?.text ?? getProfilePreviewText(profile);
+  const hasExcerpt = isDesktopResult || Boolean(previewText);
   const classes = [
     'profile-card',
     `profile-card--${variant}`,
-    previewText ? 'profile-card--has-excerpt' : '',
+    hasExcerpt ? 'profile-card--has-excerpt' : '',
   ].filter(Boolean).join(' ');
 
   return (
@@ -73,19 +80,18 @@ export function ProfileCard({
             <CopyNameButton name={title} />
           </span>
           <small className="profile-card__meta"><HighlightText text={meta} terms={highlightTerms} /></small>
-          {reason && <span className="profile-card__reason"><HighlightText text={reason} terms={highlightTerms} /></span>}
-          {variant === 'result' && (
-            <span className="profile-card__help profile-card__help--desktop">
+          {!isDesktopResult && reason && <span className="profile-card__reason"><HighlightText text={reason} terms={highlightTerms} /></span>}
+          {isDesktopResult ? (
+            <span className="profile-card__excerpt">
               <span>ЧЕМ МОЖЕТ ПОМОЧЬ</span>
-              <span className="profile-card__help-text"><HighlightText text={helpText} terms={highlightTerms} /></span>
+              <q><HighlightText text={helpText} terms={highlightTerms} /></q>
             </span>
-          )}
-          {variant === 'result' && previewText && (
-            <span className="profile-card__excerpt profile-card__excerpt--mobile">
+          ) : variant === 'result' && previewText ? (
+            <span className="profile-card__excerpt">
               {excerpt?.label && <span>{excerpt.label}</span>}
               <q><HighlightText text={previewText} terms={highlightTerms} /></q>
             </span>
-          )}
+          ) : null}
         </span>
       </div>
     </article>
