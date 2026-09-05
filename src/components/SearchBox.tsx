@@ -118,7 +118,6 @@ export function SearchBox({
                 role="option"
                 aria-selected={index === activeIndex}
                 onMouseDown={(event) => event.preventDefault()}
-                onMouseEnter={() => setActiveIndex(index)}
                 onClick={() => selectSuggestion(suggestion)}
               >
                 <span className="search-suggestion__type">{typeLabel[suggestion.type]}</span>
