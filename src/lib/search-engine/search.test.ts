@@ -15,6 +15,18 @@ const makeProfile = (id: string, overrides: Partial<Profile> = {}): Profile => (
 });
 
 describe('local search', () => {
+  it('does not confuse Vladimir with Vlad, aliases or mentions in occupations', () => {
+    const profiles = [
+      makeProfile('vladimir', { name:'Владимир Иванов' }),
+      makeProfile('vlad', { name:'Влад' }),
+      makeProfile('vladislav', { name:'Владислав' }),
+      makeProfile('roman', { name:'Роман', telegramDisplayName:'Владимир', rawProfileText:'Работаю с Владимиром' }),
+      makeProfile('svyat', { name:'Святослав', canHelpWith:'Владею бизнесом' }),
+    ];
+    expect(searchProfiles(profiles, 'Владимир').map(r=>r.profile.id)).toEqual(['vladimir']);
+    expect(searchProfiles(profiles, 'Владимир Петров')).toEqual([]);
+    expect(getSearchSuggestions(profiles, 'Владимир').filter(s=>s.type==='person').map(s=>s.profileId)).toEqual(['vladimir']);
+  });
   it('always ranks an exact name match first', () => {
     const exact = makeProfile('exact', { name: 'Леонид Цветков', telegramDisplayName: 'Цветков Леонид', occupation: 'Текстильное ателье' });
     const noisy = makeProfile('noisy', { name: 'Другой человек', canHelpWith: 'Могу познакомить с Леонидом Цветковым и помочь по продажам', rawProfileText: 'Леонид Цветков упоминается несколько раз' });

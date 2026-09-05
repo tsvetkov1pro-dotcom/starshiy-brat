@@ -1,4 +1,5 @@
 import type { Profile } from '../../types/profile';
+import { getProfileDisplayName } from '../profile-normalization';
 
 export type SearchField =
   | 'name'
@@ -178,7 +179,7 @@ function tokenize(value: string, expandAliases = false): string[] {
 function tokenMatches(stemmedWord: string, candidates: Iterable<string>): boolean {
   for (const candidate of candidates) {
     if (stemmedWord === candidate) return true;
-    if (stemmedWord.length >= 4 && candidate.length >= 4 && (stemmedWord.startsWith(candidate) || candidate.startsWith(stemmedWord))) return true;
+    if (stemmedWord.length >= 4 && candidate.length >= 4 && stemmedWord.startsWith(candidate)) return true;
   }
   return false;
 }
@@ -310,6 +311,17 @@ export function findProfileExcerptForTerms(profile: Profile, terms: string[]): S
 }
 
 export function searchProfiles(profiles: Profile[], query: string, options: SearchOptions = {}): SearchResult[] {
+  const identityTokens = normalize(query).split(' ').filter(Boolean);
+  const knownNames = new Set('владимир владислав влад роман святослав александр алексей антон андрей артем борис вадим валерий василий виктор виталий вячеслав георгий григорий даниил денис дмитрий евгений егор иван игорь илья кирилл константин леонид максим михаил никита николай олег павел петр руслан рустэм сергей семен станислав степан тимофей федор юрий ярослав'.split(' '));
+  const isName = identityTokens.length > 0 && identityTokens.length <= 3 && (
+    knownNames.has(identityTokens[0]) || profiles.some(profile => {
+      const words = normalize(getProfileDisplayName(profile)).split(' ');
+      return identityTokens.every(token => words.includes(token));
+    })
+  );
+  if (isName) return searchProfilesByName(profiles, query).slice(0, options.limit ?? 50).map(profile => ({
+    profile, score: 20_000, reasons: [{field:'exact', label:'Имя', matched:[getProfileDisplayName(profile)]}], highlightTerms: identityTokens,
+  }));
   const spec = getQuerySpec(query);
   if (!spec.normalizedQuery || spec.directTokens.length === 0) return [];
 
@@ -404,7 +416,7 @@ export function getSearchSuggestions(profiles: Profile[], query: string, limit =
   }
 
   for (const result of searchProfiles(profiles, query, { limit: 5 })) {
-    const name = result.profile.name ?? result.profile.telegramDisplayName;
+    const name = getProfileDisplayName(result.profile);
     push({
       id: `person:${result.profile.id}`,
       type: 'person',
@@ -419,3 +431,13 @@ export function getSearchSuggestions(profiles: Profile[], query: string, limit =
 }
 
 export const searchInternals = { normalize, stem, tokenize, getQuerySpec };
+
+// Identity search never stems names or searches occupations and Telegram aliases.
+export function searchProfilesByName(profiles: Profile[], query: string): Profile[] {
+  const tokens = normalize(query).split(' ').filter(Boolean);
+  if (!tokens.length) return [];
+  return profiles.filter(profile => {
+    const words = normalize(getProfileDisplayName(profile)).split(' ');
+    return tokens.every(token => words.some(word => word === token || (token.length >= 2 && word.startsWith(token))));
+  }).sort((a,b) => getProfileDisplayName(a).localeCompare(getProfileDisplayName(b), 'ru'));
+}

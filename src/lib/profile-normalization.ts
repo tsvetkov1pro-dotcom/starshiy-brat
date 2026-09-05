@@ -27,17 +27,28 @@ export function cleanProfileName(value?: string): string | undefined {
   cleaned = cleanPunctuation(cleaned)
     .split(/[,;]\s*(?=(?:1[6-9]|[2-9]\d)\b)/)[0] ?? cleaned;
   cleaned = cleaned.replace(/\s+(?:мне\s*)?(?:1[6-9]|[2-9]\d)\s*(?:лет|год(?:а|ов)?)?\s*$/i, '').trim();
+  cleaned = cleaned.split(/\s+\d|[,;]|\s*\(/)[0]?.trim() ?? '';
 
   // Имя не должно превращаться в целую анкету или ссылку.
-  if (!cleaned || cleaned.length > 80 || /^https?:\/\//i.test(cleaned)) return undefined;
+  if (!cleaned || cleaned.length > 80 || /^https?:\/\//i.test(cleaned)
+    || cleaned.split(' ').length > 4
+    || /розниц|пошив|производств|направлени|магазин|занимаюсь|работаю|продаж|строительств/i.test(cleaned)) return undefined;
   return cleaned;
 }
 
+export function extractProfileName(text: string): string | undefined {
+  const normalized = text.replace(/1️⃣/g, '1.').replace(/2️⃣/g, '2.');
+  const explicit = normalized.match(/(?:меня\s+зовут|как\s+(?:тебя|вас)\s+зовут\s*\??\s*[:—–-]*)\s*([^\n]+)/i)?.[1];
+  const first = normalized.match(/(?:^|\s)1[.)]\s*([^\n]+)/)?.[1]
+    ?? normalized.match(/(?:^|\n)\s*1\s+([^\n]+)/)?.[1];
+  return cleanProfileName((explicit ?? first)?.split(/\s+[2-8][.)]\s*/)[0]);
+}
+
 export function getProfileDisplayName(profile: Profile): string {
-  return cleanProfileName(profile.name) ?? cleanProfileName(profile.telegramDisplayName) ?? profile.telegramDisplayName;
+  return extractProfileName(profile.rawProfileText) ?? cleanProfileName(profile.name) ?? cleanProfileName(profile.telegramDisplayName) ?? profile.telegramDisplayName;
 }
 
 export function normalizeProfile(profile: Profile): Profile {
-  const cleanName = cleanProfileName(profile.name);
+  const cleanName = extractProfileName(profile.rawProfileText) ?? cleanProfileName(profile.name) ?? cleanProfileName(profile.telegramDisplayName);
   return cleanName && cleanName !== profile.name ? { ...profile, name: cleanName } : profile;
 }

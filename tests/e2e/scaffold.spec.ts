@@ -109,11 +109,12 @@ test('power search suggests related concepts, finds raw text and keeps clean nam
 
 test('recommendation refresh changes four compact cards without overflow', async ({ page }, testInfo) => {
   await importFixture(page);
-  const select = page.locator('.self-select select');
-  const selfOption = select.locator('option').filter({ hasText: 'Леонид Цветков' }).first();
-  const selfValue = await selfOption.getAttribute('value');
-  expect(selfValue).not.toBeNull();
-  await select.selectOption(selfValue!);
+  await page.getByRole('combobox', { name:'Введите своё имя' }).fill('Леонид');
+  await page.getByRole('option').filter({ hasText:'Леонид Цветков' }).click();
+  await expect(page.getByRole('heading', { name:'Это Вы', exact:true })).toBeVisible();
+  await page.reload();
+  await expect(page.getByRole('heading', { name:'Это Вы', exact:true })).toBeVisible();
+  await expect(page.getByRole('combobox', { name:'Введите своё имя' })).toHaveCount(0);
   const cards = page.locator('.recommendation-grid .profile-card');
   const titles = page.locator('.recommendation-grid .profile-card__title');
   await expect(cards).toHaveCount(4);
@@ -138,4 +139,48 @@ test('directory cards stay dense instead of giant empty containers', async ({ pa
   if (box) expect(box.height).toBeLessThanOrEqual(230);
   const leak = await page.locator('.profile-card--result').evaluateAll((elements) => elements.some((element) => element.scrollWidth > element.clientWidth + 1));
   expect(leak).toBe(false);
+});
+
+test('self picker has explicit search, keyboard selection and change cancellation', async ({ page }) => {
+  await importFixture(page);
+  const input = page.getByRole('combobox', { name: 'Введите своё имя' });
+  await input.fill('Несуществующий');
+  await expect(page.getByText('Никого не нашли. Проверьте имя или фамилию.')).toBeVisible();
+  await input.fill('Леонид');
+  await input.press('Enter');
+  await expect(page.getByRole('heading', { name: 'Это Вы', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: 'Сменить', exact: true }).click();
+  await input.fill('Даниил');
+  await page.getByRole('option').filter({ hasText: 'Даниил Петров' }).click();
+  await page.reload();
+  await expect(page.locator('.self-selected')).toContainText('Даниил Петров');
+  await page.getByRole('button', { name: 'Сменить', exact: true }).click();
+  await page.getByRole('button', { name: 'Отмена', exact: true }).click();
+  await expect(page.locator('.self-selected')).toContainText('Даниил Петров');
+});
+
+test('name search excludes aliases and card copy uses the displayed identity', async ({ page, context }) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+  const records = [
+    ['Владимир Иванов', 'Владимир Иванов', 'Производство'],
+    ['Влад', 'Влад', 'Производство'],
+    ['Владислав', 'Владислав', 'Продажи'],
+    ['Роман', 'Владимир', 'Продажи'],
+    ['Святослав', 'Святослав', 'Владею производством'],
+  ];
+  const html = records.map(([name, author, work], i) => `<div class="message default" id="message${i}"><div class="body"><div class="from_name">${author}</div><div class="text">1. ${name}<br>2. Москва<br>3. 30 лет<br>4. ${work}<br>8. Работаю с Владимиром</div></div></div>`).join('');
+  await page.goto('/import');
+  await page.locator('input[type=file]').setInputFiles({name:'names.html',mimeType:'text/html',buffer:Buffer.from(html)});
+  await expect(page.getByText(/Импортировано 5 визиток/)).toBeVisible();
+  await page.goto('/find?q=Владимир');
+  await expect(page.locator('.profile-card--result')).toHaveCount(1);
+  await expect(page.locator('.profile-card__title')).toHaveText('Владимир Иванов');
+  await page.getByRole('button', {name:'Скопировать имя: Владимир Иванов',exact:true}).click();
+  await expect.poll(() => page.evaluate(() => navigator.clipboard.readText())).toBe('Владимир Иванов');
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  await page.goto('/find?q=Производство');
+  await expect(page.locator('.profile-card--result').first()).toBeVisible();
+  const heights = await page.locator('.profile-card--result').evaluateAll(cards => cards.map(card => card.getBoundingClientRect().height));
+  expect(heights.length).toBeGreaterThan(1);
+  expect(new Set(heights).size).toBe(1);
 });

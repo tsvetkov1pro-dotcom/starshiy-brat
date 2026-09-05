@@ -22,7 +22,7 @@ interface AppDataValue {
   selectedChallenges: string[];
   favoriteProfileIds: string[];
   refresh: () => Promise<void>;
-  selectSelf: (profileId?: string) => void;
+  selectSelf: (profileId?: string) => boolean;
   toggleFavorite: (profileId: string) => void;
   toggleInterest: (value: string) => void;
   toggleChallenge: (value: string) => void;
@@ -53,8 +53,9 @@ export function AppDataProvider({ children }: PropsWithChildren) {
   }, [refresh]);
 
   const selectSelf = useCallback((profileId?: string) => {
-    setSelectedSelfId(profileId);
+    if (!setSelectedSelfId(profileId)) return false;
     setSelectedSelfIdState(profileId);
+    return true;
   }, []);
 
   const toggleFavorite = useCallback((profileId: string) => {
