@@ -71,6 +71,10 @@ jobs:
           CSS_FILE="$(basename "$(find dist/assets -maxdepth 1 -type f -name 'index-*.css' | head -n 1)")"
           printf '{"js":"%s","css":"%s","sha":"%s"}\n' "$JS_FILE" "$CSS_FILE" "$GITHUB_SHA" > dist/latest.json
           rm -f dist/assets/*.map
+          # The existing stable Vercel loader references these compatibility names.
+          # Keep them pointing at the exact current production bundle on every release.
+          cp "dist/assets/$CSS_FILE" dist/assets/index-Cqt5wARO.css
+          cp "dist/assets/$JS_FILE" dist/assets/index-Donq7OuA.js
           rm -rf /tmp/starshiy-brat-deploy
           mkdir -p /tmp/starshiy-brat-deploy
           cp -R dist/. /tmp/starshiy-brat-deploy/
