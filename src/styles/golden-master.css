@@ -688,7 +688,7 @@ img {
   height: 100%;
   object-fit: cover;
   object-position: 50% 50%;
-  transform: scale(1.04);
+  transform: translate(-3%, -3%) scale(1.08);
   transform-origin: center;
 }
 

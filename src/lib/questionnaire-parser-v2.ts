@@ -229,6 +229,13 @@ function uniqueHelpLines(lines: string[]): string[] {
   return result;
 }
 
+function cleanHelpLabel(value: string): string {
+  return value.replace(
+    /^(?:могу\s+быть\s+полез(?:ен|на)|чем\s+могу\s+помочь|могу\s+помочь)\s*[:—–-]?\s*/i,
+    '',
+  ).trim().replace(/[.,;:]+$/, '');
+}
+
 function inferHelp(rawText: string, segments: Segment[], freeHelp: string[]): string | undefined {
   const segment8 = segments.find((segment) => segment.number === 8)?.text;
   if (segment8) return cleanAnswer(segment8);
@@ -241,7 +248,7 @@ function inferHelp(rawText: string, segments: Segment[], freeHelp: string[]): st
     .map(normalizeSpace)
     .filter(Boolean)
     .filter((line) => signalCount('canHelpWith', line) > 0)
-    .map((line) => line.replace(/^[+•-]\s*/, ''));
+    .map((line) => cleanHelpLabel(line.replace(/^[+•-]\s*/, '')));
   const unique = uniqueHelpLines(semanticLines);
   return unique.length ? unique.join('\n') : undefined;
 }

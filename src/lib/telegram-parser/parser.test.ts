@@ -192,4 +192,23 @@ describe('Telegram parser', () => {
       telegramParserInternals.createStableProfileId(params),
     );
   });
+
+  it('maps the free-form Sergey introduction without treating a search fragment as his name', () => {
+    const html = wrap(message({
+      id: '90',
+      author: 'Сергей Fox',
+      text: '#знакомство<br><br>Мужчины, привет каждому<br><br>Зовут Сергей, из Москвы, 43 года.<br>Последние восемь лет работаю на себя, ИП, продюсер рекламного и медиа контента.<br><br>Самое тяжелое сейчас в жизни это кеш, сфера деградировала.<br><br>Самое важное - обеспечить базу семье, раздать долги.<br><br>Результат через 90 дней - отдать часть острых долгов, наладить базу финансов.<br><br>Могу быть полезен: стратегия и маркетинг, упаковка продукта.',
+    }));
+
+    expect(parseTelegramExport(html).profiles[0]).toMatchObject({
+      name: 'Сергей',
+      city: 'Москва',
+      age: 43,
+      occupation: 'ИП, продюсер рекламного и медиа контента',
+      currentChallenge: 'в жизни это кеш, сфера деградировала',
+      currentPriority: 'обеспечить базу семье, раздать долги',
+      goal90Days: 'отдать часть острых долгов, наладить базу финансов',
+      canHelpWith: 'стратегия и маркетинг, упаковка продукта',
+    });
+  });
 });

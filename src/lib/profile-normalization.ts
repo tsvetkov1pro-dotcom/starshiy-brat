@@ -38,10 +38,69 @@ export function cleanProfileName(value?: string): string | undefined {
 
 export function extractProfileName(text: string): string | undefined {
   const normalized = text.replace(/1️⃣/g, '1.').replace(/2️⃣/g, '2.');
-  const explicit = normalized.match(/(?:меня\s+зовут|как\s+(?:тебя|вас)\s+зовут\s*\??\s*[:—–-]*)\s*([^\n]+)/i)?.[1];
+  const explicit = normalized.match(/(?:меня\s+зовут|(?:^|[\n.!?]\s*)зовут|как\s+(?:тебя|вас)\s+зовут\s*\??\s*[:—–-]*)\s*([^\n]+)/i)?.[1];
   const first = normalized.match(/(?:^|\s)1[.)]\s*([^\n]+)/)?.[1]
     ?? normalized.match(/(?:^|\n)\s*1\s+([^\n]+)/)?.[1];
   return cleanProfileName((explicit ?? first)?.split(/\s+[2-8][.)]\s*/)[0]);
+}
+
+function cleanFreeFormValue(value?: string): string | undefined {
+  if (!value) return undefined;
+  const cleaned = value.replace(/^[\s:—–-]+|[\s.]+$/g, '').replace(/\s+/g, ' ').trim();
+  return cleaned || undefined;
+}
+
+function sectionValue(text: string, marker: RegExp): string | undefined {
+  for (const block of text.split(/\n\s*\n|\n/)) {
+    const value = block.match(marker)?.[1];
+    if (value) return cleanFreeFormValue(value);
+  }
+  return undefined;
+}
+
+function normalizeCity(value?: string): string | undefined {
+  const city = cleanFreeFormValue(value);
+  if (!city) return undefined;
+  const knownForms: Record<string, string> = {
+    москвы: 'Москва',
+    петербурга: 'Санкт-Петербург',
+    'санкт-петербурга': 'Санкт-Петербург',
+  };
+  return knownForms[city.toLowerCase()] ?? city;
+}
+
+/** Extracts fields from free-form introductions that do not use the numbered template. */
+export function extractFreeFormProfileFields(text: string): Partial<Profile> {
+  const identity = text.match(/(?:^|[\n.!?]\s*)зовут\s+[^,\n.]+\s*,?\s*([^\n.]*)/i)?.[1];
+  const city = normalizeCity(identity?.match(/из\s+([А-ЯЁ][А-ЯЁа-яё-]+(?:\s+[А-ЯЁ][а-яё-]+)?)/i)?.[1]);
+  const ageMatch = text.match(/(?:^|\D)(1[6-9]|[2-9]\d)\s*(?:лет|года?|год)(?=\s|[.,!?]|$)/i);
+
+  const labeledOccupation = sectionValue(text, /^(?:чем\s+занимаюсь|занимаюсь|деятельность|профессия|бизнес)\s*[:—–-]\s*(.+)$/i);
+  const workSentence = text.split('\n').map((line) => line.trim()).find((line) => /(?:работаю|занимаюсь)/i.test(line));
+  const inferredOccupation = cleanFreeFormValue(
+    workSentence
+      ?.replace(/^последние\s+.{1,40}?\s+лет\s+/i, '')
+      .replace(/^(?:я\s+)?работаю\s+на\s+себя\s*[,—–-]?\s*/i, '')
+      .replace(/^(?:я\s+)?(?:работаю|занимаюсь)\s*[:—–-]?\s*/i, ''),
+  );
+
+  const name = extractProfileName(text);
+  const occupation = labeledOccupation ?? inferredOccupation;
+  const currentChallenge = sectionValue(text, /^(?:самое\s+тяж[её]лое(?:\s+сейчас)?|текущая\s+(?:задача|сложность)|сейчас\s+сложно)\s*[:—–-]?\s*(.+)$/i);
+  const currentPriority = sectionValue(text, /^(?:самое\s+важное(?:\s+сейчас)?|сейчас\s+важно|приоритет)\s*[:—–-]?\s*(.+)$/i);
+  const goal90Days = sectionValue(text, /^(?:результат\s+через\s+90\s+дней|цель\s+на\s+90\s+дней|через\s+90\s+дней)\s*[:—–-]?\s*(.+)$/i);
+  const canHelpWith = sectionValue(text, /^(?:могу\s+быть\s+полез(?:ен|на)|чем\s+могу\s+помочь|могу\s+помочь)\s*[:—–-]?\s*(.+)$/i);
+
+  return {
+    ...(name ? { name } : {}),
+    ...(city ? { city } : {}),
+    ...(ageMatch ? { age: Number(ageMatch[1]) } : {}),
+    ...(occupation ? { occupation } : {}),
+    ...(currentChallenge ? { currentChallenge } : {}),
+    ...(currentPriority ? { currentPriority } : {}),
+    ...(goal90Days ? { goal90Days } : {}),
+    ...(canHelpWith ? { canHelpWith } : {}),
+  };
 }
 
 export function getProfileDisplayName(profile: Profile): string {
@@ -49,6 +108,17 @@ export function getProfileDisplayName(profile: Profile): string {
 }
 
 export function normalizeProfile(profile: Profile): Profile {
-  const cleanName = extractProfileName(profile.rawProfileText) ?? cleanProfileName(profile.name) ?? cleanProfileName(profile.telegramDisplayName);
-  return cleanName && cleanName !== profile.name ? { ...profile, name: cleanName } : profile;
+  const inferred = extractFreeFormProfileFields(profile.rawProfileText);
+  const cleanName = inferred.name ?? cleanProfileName(profile.name) ?? cleanProfileName(profile.telegramDisplayName);
+  return {
+    ...profile,
+    ...(cleanName ? { name: cleanName } : {}),
+    ...(!profile.city && inferred.city ? { city: inferred.city } : {}),
+    ...(profile.age === undefined && inferred.age !== undefined ? { age: inferred.age } : {}),
+    ...(!profile.occupation && inferred.occupation ? { occupation: inferred.occupation } : {}),
+    ...(!profile.currentChallenge && inferred.currentChallenge ? { currentChallenge: inferred.currentChallenge } : {}),
+    ...(!profile.currentPriority && inferred.currentPriority ? { currentPriority: inferred.currentPriority } : {}),
+    ...(!profile.goal90Days && inferred.goal90Days ? { goal90Days: inferred.goal90Days } : {}),
+    ...(!profile.canHelpWith && inferred.canHelpWith ? { canHelpWith: inferred.canHelpWith } : {}),
+  };
 }

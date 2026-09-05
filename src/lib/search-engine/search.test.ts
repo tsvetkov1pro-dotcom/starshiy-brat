@@ -72,6 +72,11 @@ describe('local search', () => {
     expect(results[0]?.reasons.some((reason) => reason.field === 'rawProfileText')).toBe(true);
   });
 
+  it('finds a short unit attached to a numeric amount', () => {
+    const profile = makeProfile('amount', { rawProfileText: 'Долгов 1.5млн, сейчас выравниваю денежный поток.' });
+    expect(searchProfiles([profile], 'млн')[0]?.profile.id).toBe('amount');
+  });
+
   it('provides local autocomplete suggestions and related concepts', () => {
     const profile = makeProfile('logistics', { name: 'Даниил Петров', occupation: 'Логистика', domains: ['Логистика'] });
     const suggestions = getSearchSuggestions([profile], 'груз');
