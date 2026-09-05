@@ -688,7 +688,6 @@ img {
   height: 100%;
   object-fit: cover;
   object-position: 50% 50%;
-  transform: translate(-3%, -3%) scale(1.08);
   transform-origin: center;
 }
 
@@ -1552,12 +1551,14 @@ img {
     right: 0;
     bottom: 0;
     z-index: 80;
-    width: 100%;
-    height: calc(60px + env(safe-area-inset-bottom));
+    width: 100vw;
+    min-width: 100vw;
+    height: calc(64px + env(safe-area-inset-bottom));
     display: grid;
     grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: 4px;
-    padding: 5px 8px calc(5px + env(safe-area-inset-bottom));
+    margin: 0;
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom));
     border-top: 1px solid #ded6ca;
     border-radius: 0;
     background: rgba(255, 254, 251, .98);
@@ -1620,8 +1621,15 @@ img {
   }
 
   .self-picker__popup {
+    position: static;
     width: 100%;
     max-width: 100%;
+    margin-top: 9px;
+    box-shadow: 0 8px 22px rgba(48, 39, 30, .12);
+  }
+
+  .self-picker__popup [role=listbox] {
+    max-height: min(42vh, 320px);
   }
 
   .dashboard-grid,

@@ -13,11 +13,11 @@ const frameStyle: CSSProperties = {
   display: 'grid',
   placeItems: 'center',
   overflow: 'hidden',
-  border: 0,
+  border: '2px solid #fffaf0',
   borderRadius: '50%',
   padding: 0,
-  background: 'transparent',
-  boxShadow: 'none',
+  background: '#1b1814',
+  boxShadow: '0 0 0 1px rgba(126, 87, 37, .45), 0 4px 12px rgba(31, 25, 18, .14)',
   lineHeight: 0,
 };
 
@@ -29,7 +29,8 @@ const imageStyle: CSSProperties = {
   objectFit: 'cover',
   objectPosition: '50% 50%',
   borderRadius: '50%',
-  transform: 'none',
+  transform: 'translate(-10%, -7%) scale(1.14)',
+  transformOrigin: '50% 50%',
   filter: 'none',
   imageRendering: 'auto',
 };
