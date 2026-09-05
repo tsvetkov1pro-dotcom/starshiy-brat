@@ -195,6 +195,9 @@ test('free-form profile repairs its identity and fills the profile summary', asy
   await page.locator('.profile-card__open').click();
   await expect(page.getByRole('heading', { name: 'Сергей', exact: true })).toBeVisible();
   await expect(page.getByText('ИП, продюсер рекламного и медиа контента', { exact: true })).toBeVisible();
-  await expect(page.getByText('стратегия и маркетинг, упаковка продукта', { exact: true })).toBeVisible();
+  await expect(
+    page.getByRole('region', { name: 'Главное о брате' })
+      .getByText('стратегия и маркетинг, упаковка продукта', { exact: true }),
+  ).toBeVisible();
   await page.screenshot({ path: `test-results/free-form-${testInfo.project.name}.png`, fullPage: true });
 });
