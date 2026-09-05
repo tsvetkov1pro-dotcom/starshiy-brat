@@ -184,3 +184,17 @@ test('name search excludes aliases and card copy uses the displayed identity', a
   expect(heights.length).toBeGreaterThan(1);
   expect(new Set(heights).size).toBe(1);
 });
+
+test('free-form profile repairs its identity and fills the profile summary', async ({ page }, testInfo) => {
+  const freeForm = `<div class="message default" id="message90"><div class="body"><div class="from_name">Сергей Fox</div><div class="text">#знакомство<br><br>Мужчины, привет каждому<br><br>Зовут Сергей, из Москвы, 43 года.<br>Последние восемь лет работаю на себя, ИП, продюсер рекламного и медиа контента.<br><br>Самое тяжелое сейчас в жизни это кеш, сфера деградировала. Долгов 1.5млн.<br><br>Самое важное - обеспечить базу семье, раздать долги.<br><br>Результат через 90 дней - отдать часть острых долгов, наладить базу финансов.<br><br>Могу быть полезен: стратегия и маркетинг, упаковка продукта.</div></div></div>`;
+  await page.goto('/import');
+  await page.locator('input[type=file]').setInputFiles({ name: 'sergey.html', mimeType: 'text/html', buffer: Buffer.from(freeForm) });
+  await expect(page.getByText(/Импортировано 1 визиток/i)).toBeVisible();
+  await page.goto('/find?q=млн');
+  await expect(page.locator('.profile-card__title')).toHaveText('Сергей');
+  await page.locator('.profile-card__open').click();
+  await expect(page.getByRole('heading', { name: 'Сергей', exact: true })).toBeVisible();
+  await expect(page.getByText('ИП, продюсер рекламного и медиа контента', { exact: true })).toBeVisible();
+  await expect(page.getByText('стратегия и маркетинг, упаковка продукта', { exact: true })).toBeVisible();
+  await page.screenshot({ path: `test-results/free-form-${testInfo.project.name}.png`, fullPage: true });
+});
