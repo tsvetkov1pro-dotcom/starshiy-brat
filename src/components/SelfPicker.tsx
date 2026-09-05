@@ -1,10 +1,11 @@
-import { useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { getProfileDisplayName } from '../lib/profile-normalization';
 import { searchProfilesByName } from '../lib/search-engine';
 import type { Profile } from '../types/profile';
 
 export function SelfPicker({ profiles, onSelect }: { profiles: Profile[]; onSelect: (id: string) => void }) {
   const id = useId();
+  const rootRef = useRef<HTMLDivElement>(null);
   const [query, setQuery] = useState('');
   const [active, setActive] = useState(0);
   const [open, setOpen] = useState(false);
@@ -12,7 +13,21 @@ export function SelfPicker({ profiles, onSelect }: { profiles: Profile[]; onSele
   const results = matches.slice(0, 30);
   const expanded = open && query.trim().length >= 2;
 
-  return <div className="self-picker" onBlur={() => window.setTimeout(() => setOpen(false), 140)}>
+  useEffect(() => {
+    function closeFromOutside(event: PointerEvent) {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    }
+    document.addEventListener('pointerdown', closeFromOutside);
+    return () => document.removeEventListener('pointerdown', closeFromOutside);
+  }, []);
+
+  function choose(profile: Profile) {
+    setQuery(getProfileDisplayName(profile));
+    setOpen(false);
+    onSelect(profile.id);
+  }
+
+  return <div className="self-picker" ref={rootRef}>
     <label htmlFor={id}>Введите своё имя</label>
     <input id={id} role="combobox" autoComplete="off" placeholder="Например, Леонид"
       aria-expanded={expanded} aria-controls={`${id}-results`} aria-autocomplete="list"
@@ -25,7 +40,7 @@ export function SelfPicker({ profiles, onSelect }: { profiles: Profile[]; onSele
           event.preventDefault(); setOpen(true);
           setActive(current => Math.max(0, Math.min(results.length - 1, current + (event.key === 'ArrowDown' ? 1 : -1))));
         }
-        if (event.key === 'Enter' && expanded && results[active]) { event.preventDefault(); onSelect(results[active].id); }
+        if (event.key === 'Enter' && expanded && results[active]) { event.preventDefault(); choose(results[active]); }
       }} />
     <p>Найдите свою визитку и нажмите на неё. Выбор сохранится.</p>
     {expanded && <div className="self-picker__popup">
@@ -33,8 +48,8 @@ export function SelfPicker({ profiles, onSelect }: { profiles: Profile[]; onSele
       <div id={`${id}-results`} role="listbox" aria-label="Визитки для выбора себя">
         {results.map((profile, index) => <button key={profile.id} id={`${id}-${index}`} type="button" role="option"
           aria-selected={active === index} onMouseEnter={() => setActive(index)}
-          onMouseDown={event => event.preventDefault()}
-          onClick={() => onSelect(profile.id)}>
+          onPointerDown={() => setActive(index)}
+          onClick={() => choose(profile)}>
           <strong>{getProfileDisplayName(profile)}</strong>
           <span>{[profile.city, profile.occupation].filter(Boolean).join(' · ') || 'Участник сообщества'}</span>
           <small>Это я — выбрать</small>

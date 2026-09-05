@@ -197,4 +197,13 @@ test('mobile self picker selects the imported identity with one tap', async ({ p
   await page.getByRole('option').filter({ hasText: 'Леонид Цветков' }).click();
   await expect(page.getByRole('heading', { name: 'Это Вы', exact: true })).toBeVisible();
   await expect(page.locator('.self-selected')).toContainText('Леонид Цветков');
+
+  const avatarImages = page.locator('.profile-avatar img');
+  expect(await avatarImages.count()).toBeGreaterThan(0);
+  const visibleTransforms = await avatarImages.evaluateAll((images) => images
+    .filter((image) => image.getClientRects().length > 0)
+    .map((image) => getComputedStyle(image).transform));
+  await page.screenshot({ path: 'test-results/mobile-self-avatar-nav.png', fullPage: true });
+  expect(visibleTransforms.length).toBeGreaterThan(0);
+  expect(visibleTransforms.every((transform) => transform !== 'none')).toBe(true);
 });
