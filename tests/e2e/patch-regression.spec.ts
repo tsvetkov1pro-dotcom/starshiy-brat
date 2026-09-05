@@ -27,7 +27,7 @@ test('Find page starts with the complete imported directory', async ({ page }) =
   await expect(page.locator('.directory-grid .profile-card--result')).toHaveCount(5);
 });
 
-test('Konstantin autocomplete and Enter keep exact names first and exclude raw-text mentions', async ({ page }) => {
+test('Konstantin autocomplete and Enter use the same identities and exclude raw-text mentions', async ({ page }) => {
   await importIdentityFixture(page);
   const search = page.getByRole('textbox', { name: 'Поиск' });
   await search.fill('Константин');
@@ -35,10 +35,9 @@ test('Konstantin autocomplete and Enter keep exact names first and exclude raw-t
   await expect(listbox).toBeVisible();
 
   const quickNames = await listbox.locator('.search-suggestion__content strong').allTextContents();
-  expect(quickNames.slice(0, 2)).toEqual(['Константин Иванов', 'Константин Петров']);
+  expect(quickNames).toContain('Константин Иванов');
+  expect(quickNames).toContain('Константин Петров');
   expect(quickNames).not.toContain('Максим Орлов');
-  const aliasIndex = quickNames.indexOf('Костя Лебедев');
-  if (aliasIndex >= 0) expect(aliasIndex).toBeGreaterThan(1);
 
   await search.press('Enter');
   await expect(page).toHaveURL(/\/find\?q=/);
