@@ -22,6 +22,7 @@ export function FindPage() {
   const initialQuery = searchParams.get('q') ?? '';
   const [query, setQuery] = useState(initialQuery);
   const [opened, setOpened] = useState<Profile>();
+  const [openedContextQuery, setOpenedContextQuery] = useState('');
   const results = useMemo(
     () => initialQuery
       ? searchProfiles(profiles, initialQuery, { limit: Math.max(80, profiles.length) })
@@ -37,7 +38,10 @@ export function FindPage() {
     setSearchParams(trimmed ? { q: trimmed } : {});
   }
 
-  const openedResult = opened ? results.find((result) => result.profile.id === opened.id) : undefined;
+  function openProfile(profile: Profile, contextQuery = '') {
+    setOpenedContextQuery(contextQuery);
+    setOpened(profile);
+  }
 
   return (
     <section className="directory-page find-page">
@@ -52,6 +56,10 @@ export function FindPage() {
         value={query}
         onChange={setQuery}
         onSearch={search}
+        onSelectPerson={(profileId, sourceQuery) => {
+          const profile = profiles.find((candidate) => candidate.id === profileId);
+          if (profile) openProfile(profile, sourceQuery);
+        }}
         className="directory-searchbox"
         placeholder="Например: грузоперевозки, доставка, B2B продажи…"
         buttonLabel="Найти"
@@ -86,7 +94,7 @@ export function FindPage() {
                   excerpt={result.excerpt}
                   highlightTerms={initialQuery ? [initialQuery, ...result.highlightTerms] : []}
                   variant="result"
-                  onOpen={() => setOpened(result.profile)}
+                  onOpen={() => openProfile(result.profile, initialQuery)}
                   onToggleFavorite={() => toggleFavorite(result.profile.id)}
                 />
               );
@@ -98,9 +106,9 @@ export function FindPage() {
       <ProfileDialog
         profile={opened}
         favorite={opened ? favoriteProfileIds.includes(opened.id) : false}
-        highlightTerms={openedResult && initialQuery ? [initialQuery, ...openedResult.highlightTerms] : initialQuery ? [initialQuery] : []}
-        contextLabel={initialQuery ? `Найдено по запросу: ${initialQuery}` : undefined}
-        onClose={() => setOpened(undefined)}
+        highlightTerms={openedContextQuery ? [openedContextQuery] : []}
+        contextLabel={openedContextQuery ? `Найдено по запросу: ${openedContextQuery}` : undefined}
+        onClose={() => { setOpened(undefined); setOpenedContextQuery(''); }}
         onToggleFavorite={() => opened && toggleFavorite(opened.id)}
       />
     </section>
