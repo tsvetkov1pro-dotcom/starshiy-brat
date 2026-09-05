@@ -13,7 +13,7 @@ const profile: Profile = {
 };
 
 describe('ProfileAvatar', () => {
-  it('renders the approved artwork without extra frame, shadow or CSS zoom', () => {
+  it('renders the approved artwork as-is without a second circular crop', () => {
     const { container } = render(<ProfileAvatar profile={profile} size="md" />);
     const frame = container.querySelector('.profile-avatar') as HTMLElement;
     const image = container.querySelector('img') as HTMLImageElement;
@@ -24,9 +24,12 @@ describe('ProfileAvatar', () => {
     expect(frame.style.boxShadow).toBe('none');
     expect(frame.style.background).toBe('transparent');
     expect(frame.style.aspectRatio).toBe('1 / 1');
+    expect(frame.style.overflow).toBe('visible');
+    expect(frame.style.borderRadius).toBe('0px');
     expect(image.style.transform).toBe('none');
     expect(image.style.filter).toBe('none');
-    expect(image.style.objectFit).toBe('cover');
+    expect(image.style.objectFit).toBe('contain');
+    expect(image.style.borderRadius).toBe('0px');
     expect(image.getAttribute('width')).toBe('88');
     expect(image.getAttribute('height')).toBe('88');
   });
