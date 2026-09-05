@@ -49,7 +49,10 @@ export function ProfileCard({
   onToggleFavorite: () => void;
 }) {
   const title = getProfileDisplayName(profile);
-  const isDesktopResult = variant === 'result' && typeof window !== 'undefined' && window.matchMedia('(min-width: 901px)').matches;
+  const isDesktopViewport = typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(min-width: 901px)').matches;
+  const isDesktopResult = variant === 'result' && isDesktopViewport;
   const meta = isDesktopResult ? buildDesktopAboutLine(profile) : buildLegacyMeta(profile);
   const helpText = profile.canHelpWith?.trim() || 'Не указано в визитке';
   const previewText = excerpt?.text ?? getProfilePreviewText(profile);
