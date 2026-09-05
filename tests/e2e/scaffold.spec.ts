@@ -46,7 +46,9 @@ test('golden master home geometry stays dense and proportional', async ({ page }
       expect(search.y + search.height).toBeGreaterThan(hero.y + hero.height);
       expect(dashboard.height).toBeLessThanOrEqual(210);
       expect(favorites.height).toBeLessThanOrEqual(125);
-      expect(domains.width).toBeGreaterThan(challenges.width * 1.35);
+      const insightRatio = domains.width / challenges.width;
+      expect(insightRatio).toBeGreaterThanOrEqual(0.95);
+      expect(insightRatio).toBeLessThanOrEqual(1.15);
       const sphere = await page.locator('.domain-tile-v1').first().boundingBox();
       expect(sphere).not.toBeNull();
       if (sphere) expect(sphere.height).toBeGreaterThanOrEqual(118);

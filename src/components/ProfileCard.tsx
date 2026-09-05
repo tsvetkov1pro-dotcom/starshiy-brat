@@ -27,9 +27,14 @@ export function ProfileCard({
   const title = getProfileDisplayName(profile);
   const metaPrimary = profile.domains[0] && profile.domains[0] !== 'Другое' ? profile.domains[0] : profile.occupation;
   const meta = [metaPrimary, profile.city].filter(Boolean).join(' · ') || 'Участник сообщества';
+  const classes = [
+    'profile-card',
+    `profile-card--${variant}`,
+    excerpt ? 'profile-card--has-excerpt' : '',
+  ].filter(Boolean).join(' ');
 
   return (
-    <article className={`profile-card profile-card--${variant}`}>
+    <article className={classes}>
       <button
         className="icon-button profile-card__star"
         type="button"
@@ -40,7 +45,7 @@ export function ProfileCard({
       </button>
 
       <button className="profile-card__open" type="button" onClick={onOpen}>
-        <ProfileAvatar profile={profile} size={variant === 'result' ? 'lg' : 'md'} />
+        <ProfileAvatar profile={profile} size="md" />
         <span className="profile-card__body">
           <strong className="profile-card__title"><HighlightText text={title} terms={highlightTerms} /></strong>
           <small className="profile-card__meta"><HighlightText text={meta} terms={highlightTerms} /></small>
