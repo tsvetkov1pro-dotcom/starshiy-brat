@@ -125,11 +125,12 @@ test('desktop result cards have one standardized help block and centered copy ic
   }
 });
 
-test('desktop home search uses the approved width and vertically centered input line', async ({ page }, testInfo) => {
+test('desktop home search uses the approved width and physically centered input line', async ({ page }, testInfo) => {
   test.skip(testInfo.project.name === 'mobile-chromium');
   await page.goto('/');
   const searchBridge = page.locator('.search-bridge');
   const home = page.locator('.home-page');
+  const bar = page.locator('.smart-search__bar');
   const input = page.getByRole('textbox', { name: 'Поиск' });
 
   expect(await searchBridge.evaluate((element) => (element as HTMLElement).style.width)).toBe('');
@@ -142,7 +143,18 @@ test('desktop home search uses the approved width and vertically centered input 
     expect(ratio).toBeGreaterThan(0.72);
     expect(ratio).toBeLessThan(0.78);
   }
-  expect(await input.evaluate((element) => getComputedStyle(element).lineHeight)).toBe('42px');
+
+  const barBox = await bar.boundingBox();
+  const inputBox = await input.boundingBox();
+  expect(barBox).not.toBeNull();
+  expect(inputBox).not.toBeNull();
+  if (barBox && inputBox) {
+    const barCenterY = barBox.y + barBox.height / 2;
+    const inputCenterY = inputBox.y + inputBox.height / 2;
+    expect(Math.abs(barCenterY - inputCenterY)).toBeLessThanOrEqual(1);
+    expect(inputBox.height).toBeLessThan(barBox.height);
+  }
+  expect(await input.evaluate((element) => getComputedStyle(element).lineHeight)).toBe('28px');
 });
 
 test('mobile viewport keeps search at non-zooming size, empty recommendations aligned and nav flush to bottom', async ({ page }, testInfo) => {
