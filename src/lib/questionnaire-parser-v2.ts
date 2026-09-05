@@ -125,7 +125,7 @@ function cleanShortField(value?: string): string | undefined {
 
 function parseAge(value?: string): number | undefined {
   if (!value) return undefined;
-  const explicit = value.match(/\b(1[6-9]|[2-9]\d)\s*(?:лет|год(?:а|ов)?)\b/i);
+  const explicit = value.match(/\b(1[6-9]|[2-9]\d)\s*(?:лет|год(?:а|ов)?)(?=\s|[.,;:!?]|$)/i);
   const loose = value.match(/\b(1[6-9]|[2-9]\d)\b/);
   const number = Number((explicit ?? loose)?.[1]);
   return Number.isFinite(number) && number >= 16 && number <= 100 ? number : undefined;
@@ -268,7 +268,7 @@ export function parseQuestionnaireV2(rawText: string): ParsedQuestionnaireFields
   const legacyShifted = Boolean(ageIn1 && !ageIn3 && byNumber.get(3) && !hasCanonicalTail);
 
   const nameSource = cleanShortField(
-    byNumber.get(1)?.replace(/\b(1[6-9]|[2-9]\d)\s*(?:лет|год(?:а|ов)?)\b[.,;]?/gi, ''),
+    byNumber.get(1)?.replace(/\b(1[6-9]|[2-9]\d)\s*(?:лет|год(?:а|ов)?)(?=\s|[.,;:!?]|$)[.,;]?/gi, ''),
   );
   const name = cleanProfileName(nameSource);
   const city = cleanShortField(byNumber.get(2));
