@@ -1,4 +1,5 @@
 import type { Profile } from '../../types/profile';
+import { extractProfileName, cleanProfileName } from '../profile-normalization';
 import type {
   ParsedTelegramMessage,
   TelegramAttachment,
@@ -181,7 +182,7 @@ function segmentQuestionnaire(text: string): Map<number, string> {
   for (const rawLine of normalizeEmojiDigits(text).split('\n')) {
     const line = normalizeSpace(rawLine);
     if (!line) continue;
-    const match = line.match(/^([1-8])(?:\s*[-–—/]\s*([1-8]))?\s*[.)]?\s*(.*)$/);
+    const match = line.match(/^([1-8])(?:\s*[-–—/]\s*([1-8]))?(?:[.)]\s*|\s+)(.*)$/);
 
     if (match) {
       const start = Number(match[1]);
@@ -316,7 +317,7 @@ function buildProfile(messages: ParsedTelegramMessage[], warnings: TelegramParse
   const rawProfileText = profileMessages.map((message) => message.text).filter(Boolean).join('\n\n');
   const fields = segmentQuestionnaire(rawProfileText);
   const username = profileMessages.find((message) => message.authorUsername)?.authorUsername;
-  const name = cleanName(fields.get(1)) ?? fallbackName(rawProfileText);
+  const name = extractProfileName(rawProfileText) ?? cleanProfileName(fields.get(1)) ?? fallbackName(rawProfileText);
   const age = parseAge(fields.get(3)) ?? parseAge(fields.get(1)) ?? fallbackAge(rawProfileText);
 
   if (fields.size === 0 && name === undefined && age === undefined) {

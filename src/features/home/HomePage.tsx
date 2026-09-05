@@ -7,6 +7,7 @@ import { HeroBanner } from '../../components/HeroBanner';
 import { ProfileAvatar } from '../../components/ProfileAvatar';
 import { ProfileCard } from '../../components/ProfileCard';
 import { ProfileDialog } from '../../components/ProfileDialog';
+import { SelfPicker } from '../../components/SelfPicker';
 import { SearchBox } from '../../components/SearchBox';
 import { countTags } from '../../lib/classification';
 import { getProfileDisplayName } from '../../lib/profile-normalization';
@@ -51,6 +52,7 @@ export function HomePage() {
   const [openedProfile, setOpenedProfile] = useState<Profile>();
   const [refreshSeed, setRefreshSeed] = useState(0);
   const [editingSelf, setEditingSelf] = useState(false);
+  const [selfError, setSelfError] = useState('');
 
   const selectedSelf = profiles.find((profile) => profile.id === selectedSelfId);
   const favorites = profiles.filter((profile) => favoriteProfileIds.includes(profile.id)).slice(0, 6);
@@ -83,15 +85,12 @@ export function HomePage() {
 
   function chooseSelf(profileId?: string) {
     if (!profileId) return;
-    selectSelf(profileId);
+    if (!selectSelf(profileId)) { setSelfError('Не удалось сохранить выбор. Разрешите хранение данных для сайта и попробуйте ещё раз.'); return; }
+    setSelfError('');
     setRefreshSeed(0);
     setEditingSelf(false);
   }
 
-  const sortedProfiles = useMemo(
-    () => profiles.slice().sort((a, b) => getProfileDisplayName(a).localeCompare(getProfileDisplayName(b), 'ru')),
-    [profiles],
-  );
 
   return (
     <div className="home-page">
@@ -132,17 +131,9 @@ export function HomePage() {
                 </span>
               </button>
             ) : (
-              <div className="self-picker">
-                <p>{selectedSelf ? 'Выберите другой профиль.' : 'Найдите себя один раз — выбор сохранится на этом устройстве.'}</p>
-                <label className="self-select">
-                  <span className="sr-only">Выберите свою визитку</span>
-                  <select value={selectedSelfId ?? ''} onChange={(event) => chooseSelf(event.target.value || undefined)}>
-                    <option value="">Найти себя в базе…</option>
-                    {sortedProfiles.map((profile) => (
-                      <option value={profile.id} key={profile.id}>{getProfileDisplayName(profile)}{profile.city ? ` · ${profile.city}` : ''}</option>
-                    ))}
-                  </select>
-                </label>
+              <div>
+                <SelfPicker profiles={profiles} onSelect={chooseSelf} />
+                {selfError && <p role="alert">{selfError}</p>}
                 {selectedSelf && <button className="self-cancel" type="button" onClick={() => setEditingSelf(false)}>Отмена</button>}
               </div>
             )}

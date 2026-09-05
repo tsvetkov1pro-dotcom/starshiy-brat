@@ -4,6 +4,7 @@ import type { SearchExcerpt } from '../lib/search-engine';
 import type { Profile } from '../types/profile';
 import { HighlightText } from './HighlightText';
 import { ProfileAvatar } from './ProfileAvatar';
+import { CopyNameButton } from './CopyNameButton';
 
 export function ProfileCard({
   profile,
@@ -44,10 +45,14 @@ export function ProfileCard({
         <Star size={15} strokeWidth={1.8} fill={favorite ? 'currentColor' : 'none'} aria-hidden="true" />
       </button>
 
-      <button className="profile-card__open" type="button" onClick={onOpen}>
+      <button className="profile-card__open" type="button" aria-label={`Открыть визитку: ${title}`} onClick={onOpen} />
+      <div className="profile-card__content">
         <ProfileAvatar profile={profile} size="md" />
         <span className="profile-card__body">
-          <strong className="profile-card__title"><HighlightText text={title} terms={highlightTerms} /></strong>
+          <span className="profile-card__name-row">
+            <strong className="profile-card__title" title={title}><HighlightText text={title} terms={highlightTerms} /></strong>
+            <CopyNameButton name={title} />
+          </span>
           <small className="profile-card__meta"><HighlightText text={meta} terms={highlightTerms} /></small>
           {reason && <span className="profile-card__reason"><HighlightText text={reason} terms={highlightTerms} /></span>}
           {variant === 'result' && excerpt && (
@@ -57,7 +62,7 @@ export function ProfileCard({
             </span>
           )}
         </span>
-      </button>
+      </div>
     </article>
   );
 }
