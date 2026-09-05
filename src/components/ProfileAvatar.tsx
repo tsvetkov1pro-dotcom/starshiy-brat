@@ -1,15 +1,6 @@
 import type { CSSProperties } from 'react';
-import { APPROVED_AVATAR_SPRITE_HQ } from '../assets/brand/avatar-sprite-hq';
+import { APPROVED_AVATARS } from '../assets/brand/avatars';
 import type { Profile } from '../types/profile';
-
-const AVATAR_POSITIONS = [
-  ['0%', '0%'],
-  ['50%', '0%'],
-  ['100%', '0%'],
-  ['0%', '100%'],
-  ['50%', '100%'],
-  ['100%', '100%'],
-] as const;
 
 function seedNumber(value: string): number {
   let result = 0;
@@ -17,33 +8,53 @@ function seedNumber(value: string): number {
   return result;
 }
 
+const frameStyle: CSSProperties = {
+  aspectRatio: '1 / 1',
+  display: 'grid',
+  placeItems: 'center',
+  overflow: 'hidden',
+  border: 0,
+  borderRadius: '50%',
+  padding: 0,
+  background: 'transparent',
+  boxShadow: 'none',
+  lineHeight: 0,
+};
+
+const imageStyle: CSSProperties = {
+  display: 'block',
+  width: '100%',
+  height: '100%',
+  maxWidth: 'none',
+  objectFit: 'cover',
+  objectPosition: '50% 50%',
+  borderRadius: '50%',
+  transform: 'none',
+  filter: 'none',
+  imageRendering: 'auto',
+};
+
 export function ProfileAvatar({ profile, size = 'md' }: { profile: Profile; size?: 'sm' | 'md' | 'lg' }) {
   const seed = seedNumber(profile.avatarSeed || profile.id);
-  const avatarIndex = seed % AVATAR_POSITIONS.length;
-  const [positionX, positionY] = AVATAR_POSITIONS[avatarIndex];
-  const style: CSSProperties = {
-    aspectRatio: '1 / 1',
-    overflow: 'visible',
-    border: 0,
-    borderRadius: 0,
-    padding: 0,
-    backgroundColor: 'transparent',
-    backgroundImage: `url("${APPROVED_AVATAR_SPRITE_HQ}")`,
-    backgroundRepeat: 'no-repeat',
-    backgroundSize: '300% 200%',
-    backgroundPosition: `${positionX} ${positionY}`,
-    boxShadow: 'none',
-    lineHeight: 0,
-    transform: 'none',
-    filter: 'none',
-  };
+  const avatarIndex = seed % APPROVED_AVATARS.length;
+  const source = APPROVED_AVATARS[avatarIndex];
 
   return (
     <span
       className={`profile-avatar profile-avatar--${size}`}
       aria-hidden="true"
       data-avatar-index={avatarIndex}
-      style={style}
-    />
+      style={frameStyle}
+    >
+      <img
+        src={source}
+        alt=""
+        width={88}
+        height={88}
+        decoding="async"
+        draggable={false}
+        style={imageStyle}
+      />
+    </span>
   );
 }

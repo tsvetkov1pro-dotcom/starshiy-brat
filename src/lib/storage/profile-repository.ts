@@ -1,5 +1,6 @@
 import type { Profile } from '../../types/profile';
 import { normalizeProfile } from '../profile-normalization';
+import { PROFILE_PARSER_VERSION, reparseProfileV2 } from '../questionnaire-parser-v2';
 import {
   db,
   type ImportMeta,
@@ -140,7 +141,13 @@ export async function importProfilesTransactionally(
 }
 
 export async function getProfiles(database: StarshiyBratDatabase = db): Promise<Profile[]> {
-  return (await database.profiles.toArray()).map(normalizeProfile);
+  const stored = (await database.profiles.toArray()).map(normalizeProfile);
+  const migrated = stored.map((profile) => (
+    profile.parserVersion === PROFILE_PARSER_VERSION ? profile : reparseProfileV2(profile)
+  ));
+  const changed = migrated.filter((profile, index) => canonicalProfile(profile) !== canonicalProfile(stored[index]));
+  if (changed.length > 0) await database.profiles.bulkPut(changed);
+  return migrated;
 }
 
 export async function getImportMeta(database: StarshiyBratDatabase = db) {

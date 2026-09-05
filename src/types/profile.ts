@@ -18,4 +18,5 @@ export interface Profile {
   sourceDate?: string;
   realImageReference?: string;
   avatarSeed: string;
+  parserVersion?: string;
 }
