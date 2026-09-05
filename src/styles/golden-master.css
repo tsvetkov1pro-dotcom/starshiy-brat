@@ -1860,6 +1860,14 @@ img {
 .copy-name { position: relative; z-index: 3; display: inline-flex; flex: 0 0 26px; width: 26px; height: 26px; align-items: center; justify-content: center; border: 1px solid #d8b27b; border-radius: 5px; background: #f8e9d1; color: #66431b; cursor: pointer; }
 .copy-name:hover { background: #efdab8; }
 .copy-name:focus-visible { outline: 2px solid #b77c2e; outline-offset: 2px; }
+.copy-name, .icon-button { padding: 0; line-height: 0; align-items: center; justify-content: center; }
+.copy-name > svg, .icon-button > svg { display: block; flex-shrink: 0; margin: 0; }
+.nav-link > svg { display: block; flex: 0 0 19px; margin: 0; }
+.button > svg { display: block; flex-shrink: 0; }
+@media (max-width: 900px) {
+  .mobile-nav { bottom: max(10px, env(safe-area-inset-bottom)); }
+  body { padding-bottom: calc(84px + env(safe-area-inset-bottom)); }
+}
 .directory-grid { align-items: stretch; }
 .profile-card--result, .profile-card--result.profile-card--has-excerpt { height: 154px; min-height: 154px; }
 .profile-card--compact { height: 112px; }
