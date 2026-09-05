@@ -44,7 +44,16 @@ export function SearchBox({
   const isDesktopViewport = typeof window !== 'undefined'
     && typeof window.matchMedia === 'function'
     && window.matchMedia('(min-width: 901px)').matches;
-  const desktopInputStyle: CSSProperties | undefined = isDesktopViewport ? { lineHeight: '42px' } : undefined;
+  const desktopInputStyle: CSSProperties | undefined = isDesktopViewport
+    ? {
+        height: 28,
+        lineHeight: '28px',
+        alignSelf: 'center',
+        margin: 0,
+        paddingBlock: 0,
+        verticalAlign: 'middle',
+      }
+    : undefined;
 
   function selectSuggestion(suggestion: SearchSuggestion) {
     setActiveIndex(-1);
