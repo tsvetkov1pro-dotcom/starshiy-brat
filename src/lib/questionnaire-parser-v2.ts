@@ -117,18 +117,29 @@ function cleanAnswer(value?: string): string | undefined {
   return lines.join('\n').trim() || undefined;
 }
 
+function cleanShortField(value?: string): string | undefined {
+  const answer = cleanAnswer(value);
+  if (!answer) return undefined;
+  return answer.replace(/(?:\s*[.,;:])+\s*$/g, '').trim() || undefined;
+}
+
 function parseAge(value?: string): number | undefined {
   if (!value) return undefined;
-  const explicit = value.match(/\b(1[6-9]|[2-9]\d)\s*(?:лет|год(?:а|ов)?)\b/i);
+  const explicit = value.match(/\b(1[6-9]|[2-9]\d)\s*(?:лет|год(?:а|ов)?)(?=\s|[.,;:!?]|$)/i);
   const loose = value.match(/\b(1[6-9]|[2-9]\d)\b/);
   const number = Number((explicit ?? loose)?.[1]);
   return Number.isFinite(number) && number >= 16 && number <= 100 ? number : undefined;
+}
+
+function signalCount(field: SemanticField, text: string): number {
+  return FIELD_SIGNALS[field].reduce((sum, pattern) => sum + (pattern.test(text) ? 1 : 0), 0);
 }
 
 function segmentText(rawText: string): { segments: Segment[]; freeHelp: string[] } {
   const values = new Map<number, string[]>();
   const freeHelp: string[] = [];
   let currentNumber: number | undefined;
+  let freeHelpStarted = false;
 
   for (const rawLine of normalizeEmojiDigits(rawText).split('\n')) {
     const line = normalizeSpace(rawLine);
@@ -139,6 +150,7 @@ function segmentText(rawText: string): { segments: Segment[]; freeHelp: string[]
       const start = Number(marker[1]);
       const end = marker[2] ? Number(marker[2]) : start;
       currentNumber = start;
+      freeHelpStarted = start === 8;
       const rest = normalizeSpace(marker[3] ?? '');
       for (let key = Math.min(start, end); key <= Math.max(start, end); key += 1) {
         if (!values.has(key)) values.set(key, []);
@@ -149,7 +161,13 @@ function segmentText(rawText: string): { segments: Segment[]; freeHelp: string[]
 
     const bullet = /^[+•]\s*/.test(line);
     if (bullet && currentNumber !== 8 && (currentNumber === undefined || currentNumber >= 6)) {
+      freeHelpStarted = true;
       freeHelp.push(line.replace(/^[+•]\s*/, '').trim());
+      continue;
+    }
+
+    if (freeHelpStarted && currentNumber !== 8) {
+      if (signalCount('canHelpWith', line) > 0) freeHelp.push(line.replace(/^[+•-]\s*/, '').trim());
       continue;
     }
 
@@ -164,10 +182,6 @@ function segmentText(rawText: string): { segments: Segment[]; freeHelp: string[]
     .filter((segment) => segment.text);
 
   return { segments, freeHelp: freeHelp.filter(Boolean) };
-}
-
-function signalCount(field: SemanticField, text: string): number {
-  return FIELD_SIGNALS[field].reduce((sum, pattern) => sum + (pattern.test(text) ? 1 : 0), 0);
 }
 
 function scoreSegment(
@@ -253,9 +267,11 @@ export function parseQuestionnaireV2(rawText: string): ParsedQuestionnaireFields
   const hasCanonicalTail = Boolean(byNumber.get(7) || byNumber.get(8));
   const legacyShifted = Boolean(ageIn1 && !ageIn3 && byNumber.get(3) && !hasCanonicalTail);
 
-  const nameSource = byNumber.get(1)?.replace(/\b(1[6-9]|[2-9]\d)\s*(?:лет|год(?:а|ов)?)\b[.,;]?/gi, '').trim();
+  const nameSource = cleanShortField(
+    byNumber.get(1)?.replace(/\b(1[6-9]|[2-9]\d)\s*(?:лет|год(?:а|ов)?)(?=\s|[.,;:!?]|$)[.,;]?/gi, ''),
+  );
   const name = cleanProfileName(nameSource);
-  const city = cleanAnswer(byNumber.get(2));
+  const city = cleanShortField(byNumber.get(2));
   const age = ageIn3 ?? ageIn1 ?? parseAge(rawText);
 
   const occupationNumber = legacyShifted ? 3 : 4;

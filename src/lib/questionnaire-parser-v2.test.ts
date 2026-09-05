@@ -37,13 +37,15 @@ describe('questionnaire parser v2', () => {
 + Грузоперевозки со скидкой для участников чата.
 + Могу быстро найти подрядчика практически под любую задачу.
 • Есть опыт капитального ремонта своего цеха 300 м².
-• Есть проверенные юристы. Могу помочь контактом по юридическим вопросам.`;
+• Есть проверенные юристы. Могу помочь контактом по юридическим вопросам.
+Для себя ищу сильное окружение, партнёров по швейному направлению.
+Помогают окружение и новые связи.`;
 
     const parsed = parseQuestionnaireV2(raw);
 
     expect(parsed.layout).toBe('legacy-shifted');
-    expect(parsed.name).toContain('Цветков Леонид');
-    expect(parsed.city).toContain('Санкт-Петербург, Приморский район');
+    expect(parsed.name).toBe('Цветков Леонид');
+    expect(parsed.city).toBe('Санкт-Петербург, Приморский район');
     expect(parsed.age).toBe(33);
     expect(parsed.occupation).toContain('текстильное ателье');
     expect(parsed.occupation).toContain('грузоперевозки');
@@ -51,10 +53,13 @@ describe('questionnaire parser v2', () => {
     expect(parsed.currentChallenge).toContain('не утонуть в количестве задач');
     expect(parsed.currentPriority).toContain('масштабирование текстильного ателье');
     expect(parsed.goal90Days).toContain('Через 90 дней');
+    expect(parsed.goal90Days).not.toContain('Для себя ищу');
+    expect(parsed.goal90Days).not.toContain('Помогают окружение');
     expect(parsed.canHelpWith).toContain('текстильном оформлении');
     expect(parsed.canHelpWith).toContain('Грузоперевозки');
     expect(parsed.canHelpWith).toContain('подрядчика');
     expect(parsed.canHelpWith).toContain('юристы');
+    expect(parsed.canHelpWith).not.toContain('Для себя ищу');
   });
 
   it('keeps identity and user-facing state while reparsing semantic fields', () => {
