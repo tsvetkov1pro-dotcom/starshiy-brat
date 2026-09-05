@@ -3,7 +3,10 @@ import { useEffect, useState, type CSSProperties } from 'react';
 
 export function CopyNameButton({ name }: { name: string }) {
   const [status, setStatus] = useState('');
-  const desktopButtonStyle: CSSProperties | undefined = typeof window !== 'undefined' && window.matchMedia('(min-width: 901px)').matches
+  const isDesktopViewport = typeof window !== 'undefined'
+    && typeof window.matchMedia === 'function'
+    && window.matchMedia('(min-width: 901px)').matches;
+  const desktopButtonStyle: CSSProperties | undefined = isDesktopViewport
     ? { display: 'inline-grid', placeItems: 'center' }
     : undefined;
 
