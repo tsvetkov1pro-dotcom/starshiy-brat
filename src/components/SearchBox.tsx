@@ -41,6 +41,9 @@ export function SearchBox({
   const [activeIndex, setActiveIndex] = useState(-1);
   const suggestions = useMemo(() => getSearchSuggestions(profiles, value, 20), [profiles, value]);
   const open = focused && !dismissed && value.trim().length >= 2 && suggestions.length > 0;
+  const desktopInputStyle: CSSProperties | undefined = typeof window !== 'undefined' && window.matchMedia('(min-width: 901px)').matches
+    ? { lineHeight: '42px' }
+    : undefined;
 
   function selectSuggestion(suggestion: SearchSuggestion) {
     setActiveIndex(-1);
@@ -99,6 +102,7 @@ export function SearchBox({
           autoComplete="off"
           placeholder={placeholder}
           value={value}
+          style={desktopInputStyle}
           onChange={(event) => {
             onChange(event.target.value);
             setDismissed(false);
