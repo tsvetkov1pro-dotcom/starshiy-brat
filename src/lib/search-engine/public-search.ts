@@ -27,6 +27,10 @@ function normalizeIdentity(value: string): string {
     .trim();
 }
 
+function rawTokens(value: string): string[] {
+  return normalizeIdentity(value).split(' ').filter(Boolean);
+}
+
 function canonicalNameToken(token: string): string {
   const normalized = normalizeIdentity(token);
   const direct = NAME_ALIASES[normalized];
@@ -41,11 +45,7 @@ function canonicalNameToken(token: string): string {
 }
 
 function canonicalTokens(value: string): string[] {
-  return normalizeIdentity(value).split(' ').filter(Boolean).map(canonicalNameToken);
-}
-
-function profileNameTokens(profile: Profile): string[] {
-  return canonicalTokens(getProfileDisplayName(profile));
+  return rawTokens(value).map(canonicalNameToken);
 }
 
 function tokenMatchesName(queryToken: string, nameToken: string): boolean {
@@ -54,33 +54,46 @@ function tokenMatchesName(queryToken: string, nameToken: string): boolean {
 }
 
 function identityMatchScore(profile: Profile, query: string): number | undefined {
-  const queryTokens = canonicalTokens(query);
-  const nameTokens = profileNameTokens(profile);
-  if (queryTokens.length === 0 || nameTokens.length === 0) return undefined;
+  const queryRaw = rawTokens(query);
+  const queryCanonical = queryRaw.map(canonicalNameToken);
+  const displayName = getProfileDisplayName(profile);
+  const nameRaw = rawTokens(displayName);
+  const nameCanonical = nameRaw.map(canonicalNameToken);
+  if (queryCanonical.length === 0 || nameCanonical.length === 0) return undefined;
 
-  const allMatched = queryTokens.every((queryToken) => nameTokens.some((nameToken) => tokenMatchesName(queryToken, nameToken)));
+  const allMatched = queryCanonical.every((queryToken) => nameCanonical.some((nameToken) => tokenMatchesName(queryToken, nameToken)));
   if (!allMatched) return undefined;
 
-  const normalizedQuery = queryTokens.join(' ');
-  const normalizedName = nameTokens.join(' ');
-  if (normalizedName === normalizedQuery) return 30_000;
-
   let score = 20_000;
-  for (const queryToken of queryTokens) {
-    if (nameTokens.includes(queryToken)) score += 500;
-    else score += 150;
+  const rawPhrase = queryRaw.join(' ');
+  const rawNamePhrase = nameRaw.join(' ');
+  const canonicalPhrase = queryCanonical.join(' ');
+  const canonicalNamePhrase = nameCanonical.join(' ');
+
+  if (rawNamePhrase === rawPhrase) score += 12_000;
+  else if (canonicalNamePhrase === canonicalPhrase) score += 8_000;
+
+  for (let index = 0; index < queryCanonical.length; index += 1) {
+    const raw = queryRaw[index];
+    const canonical = queryCanonical[index];
+    if (nameRaw.includes(raw)) score += 1_200;
+    else if (nameRaw.some((token) => raw.length >= 2 && token.startsWith(raw))) score += 700;
+    else if (nameCanonical.includes(canonical)) score += 400;
+    else score += 120;
   }
 
-  if (nameTokens[0] === queryTokens[0]) score += 700;
-  else if (nameTokens[0]?.startsWith(queryTokens[0] ?? '')) score += 350;
+  if (nameRaw[0] === queryRaw[0]) score += 1_000;
+  else if (nameRaw[0]?.startsWith(queryRaw[0] ?? '')) score += 600;
+  else if (nameCanonical[0] === queryCanonical[0]) score += 250;
+
   return score;
 }
 
 function isIdentityQuery(profiles: Profile[], query: string): boolean {
-  const rawTokens = normalizeIdentity(query).split(' ').filter(Boolean);
-  if (rawTokens.length === 0 || rawTokens.length > 3) return false;
+  const tokens = rawTokens(query);
+  if (tokens.length === 0 || tokens.length > 3) return false;
 
-  const first = canonicalNameToken(rawTokens[0]);
+  const first = canonicalNameToken(tokens[0]);
   if (KNOWN_NAMES.has(first)) return true;
   return profiles.some((profile) => identityMatchScore(profile, query) !== undefined);
 }
@@ -100,9 +113,9 @@ export function searchProfiles(profiles: Profile[], query: string, options: Sear
   if (!isIdentityQuery(profiles, query)) return baseSearchProfiles(profiles, query, options);
 
   const limit = options.limit ?? 50;
-  const rawTokens = normalizeIdentity(query).split(' ').filter(Boolean);
+  const queryRaw = rawTokens(query);
   const canonical = canonicalTokens(query);
-  const highlightTerms = [...new Set([...rawTokens, ...canonical])];
+  const highlightTerms = [...new Set([...queryRaw, ...canonical])];
 
   return searchProfilesByName(profiles, query).slice(0, limit).map((profile, index) => ({
     profile,
