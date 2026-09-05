@@ -4,8 +4,17 @@ import { useAppData } from '../../app/AppDataContext';
 import { ProfileCard } from '../../components/ProfileCard';
 import { ProfileDialog } from '../../components/ProfileDialog';
 import { SearchBox } from '../../components/SearchBox';
-import { getRelatedSearchTerms, searchProfiles } from '../../lib/search-engine';
+import { getRelatedSearchTerms, searchProfiles, type SearchResult } from '../../lib/search-engine';
 import type { Profile } from '../../types/profile';
+
+function allProfilesAsResults(profiles: Profile[]): SearchResult[] {
+  return profiles.map((profile) => ({
+    profile,
+    score: 0,
+    reasons: [],
+    highlightTerms: [],
+  }));
+}
 
 export function FindPage() {
   const { profiles, favoriteProfileIds, toggleFavorite } = useAppData();
@@ -13,8 +22,13 @@ export function FindPage() {
   const initialQuery = searchParams.get('q') ?? '';
   const [query, setQuery] = useState(initialQuery);
   const [opened, setOpened] = useState<Profile>();
-  const results = useMemo(() => initialQuery ? searchProfiles(profiles, initialQuery, { limit: 80 }) : [], [profiles, initialQuery]);
-  const relatedTerms = useMemo(() => getRelatedSearchTerms(initialQuery), [initialQuery]);
+  const results = useMemo(
+    () => initialQuery
+      ? searchProfiles(profiles, initialQuery, { limit: Math.max(80, profiles.length) })
+      : allProfilesAsResults(profiles),
+    [profiles, initialQuery],
+  );
+  const relatedTerms = useMemo(() => initialQuery ? getRelatedSearchTerms(initialQuery) : [], [initialQuery]);
 
   useEffect(() => setQuery(initialQuery), [initialQuery]);
 
@@ -43,33 +57,40 @@ export function FindPage() {
         buttonLabel="Найти"
       />
 
-      {!initialQuery ? (
+      {profiles.length === 0 ? (
         <div className="panel empty-state search-onboarding">
-          <h2>Опиши, кого ищешь, обычными словами</h2>
-          <p>Например: «грузоперевозки», «кто поможет построить отдел продаж», «кто из Питера работает с AI».</p>
+          <h2>Сначала импортируй визитки сообщества</h2>
+          <p>После импорта здесь появится полный каталог участников, а поиск будет работать по всей базе.</p>
         </div>
       ) : results.length === 0 ? (
         <div className="panel empty-state"><h2>Ничего не найдено</h2><p>Попробуй более короткую формулировку или другое связанное понятие.</p></div>
       ) : (
         <>
           <div className="results-heading results-heading--search">
-            <div><strong>Найдено: {results.length}</strong><span>по запросу «{initialQuery}»</span></div>
-            {relatedTerms.length > 1 && <p>Также учитываем: {relatedTerms.filter((term) => term.toLowerCase() !== initialQuery.toLowerCase()).slice(0, 5).join(' · ')}</p>}
+            <div>
+              <strong>{initialQuery ? `Найдено: ${results.length}` : `Все участники: ${results.length}`}</strong>
+              {initialQuery && <span>по запросу «{initialQuery}»</span>}
+            </div>
+            {initialQuery && relatedTerms.length > 1 && <p>Также учитываем: {relatedTerms.filter((term) => term.toLowerCase() !== initialQuery.toLowerCase()).slice(0, 5).join(' · ')}</p>}
           </div>
           <div className="directory-grid directory-grid--results">
-            {results.map((result) => (
-              <ProfileCard
-                key={result.profile.id}
-                profile={result.profile}
-                favorite={favoriteProfileIds.includes(result.profile.id)}
-                reason={result.reasons[0]?.label}
-                excerpt={result.excerpt}
-                highlightTerms={[initialQuery, ...result.highlightTerms]}
-                variant="result"
-                onOpen={() => setOpened(result.profile)}
-                onToggleFavorite={() => toggleFavorite(result.profile.id)}
-              />
-            ))}
+            {results.map((result) => {
+              const firstReason = result.reasons[0];
+              const reason = firstReason?.field === 'exact' ? undefined : firstReason?.label;
+              return (
+                <ProfileCard
+                  key={result.profile.id}
+                  profile={result.profile}
+                  favorite={favoriteProfileIds.includes(result.profile.id)}
+                  reason={reason}
+                  excerpt={result.excerpt}
+                  highlightTerms={initialQuery ? [initialQuery, ...result.highlightTerms] : []}
+                  variant="result"
+                  onOpen={() => setOpened(result.profile)}
+                  onToggleFavorite={() => toggleFavorite(result.profile.id)}
+                />
+              );
+            })}
           </div>
         </>
       )}
@@ -77,7 +98,7 @@ export function FindPage() {
       <ProfileDialog
         profile={opened}
         favorite={opened ? favoriteProfileIds.includes(opened.id) : false}
-        highlightTerms={openedResult ? [initialQuery, ...openedResult.highlightTerms] : [initialQuery]}
+        highlightTerms={openedResult && initialQuery ? [initialQuery, ...openedResult.highlightTerms] : initialQuery ? [initialQuery] : []}
         contextLabel={initialQuery ? `Найдено по запросу: ${initialQuery}` : undefined}
         onClose={() => setOpened(undefined)}
         onToggleFavorite={() => opened && toggleFavorite(opened.id)}
