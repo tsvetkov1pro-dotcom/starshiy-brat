@@ -119,7 +119,8 @@ function cleanAnswer(value?: string): string | undefined {
 
 function cleanShortField(value?: string): string | undefined {
   const answer = cleanAnswer(value);
-  return answer?.replace(/[\s,.;:]+$/g, '').trim() || undefined;
+  if (!answer) return undefined;
+  return answer.replace(/(?:\s*[.,;:])+\s*$/g, '').trim() || undefined;
 }
 
 function parseAge(value?: string): number | undefined {
