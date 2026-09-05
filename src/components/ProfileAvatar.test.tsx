@@ -25,11 +25,11 @@ describe('ProfileAvatar', () => {
     expect(frame.style.background).toBe('transparent');
     expect(frame.style.aspectRatio).toBe('1 / 1');
     expect(frame.style.overflow).toBe('visible');
-    expect(frame.style.borderRadius).toBe('0px');
+    expect(frame.style.borderRadius).toBe('0');
     expect(image.style.transform).toBe('none');
     expect(image.style.filter).toBe('none');
     expect(image.style.objectFit).toBe('contain');
-    expect(image.style.borderRadius).toBe('0px');
+    expect(image.style.borderRadius).toBe('0');
     expect(image.getAttribute('width')).toBe('88');
     expect(image.getAttribute('height')).toBe('88');
   });
