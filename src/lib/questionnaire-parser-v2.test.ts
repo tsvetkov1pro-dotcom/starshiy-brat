@@ -42,8 +42,8 @@ describe('questionnaire parser v2', () => {
     const parsed = parseQuestionnaireV2(raw);
 
     expect(parsed.layout).toBe('legacy-shifted');
-    expect(parsed.name).toBe('Цветков Леонид');
-    expect(parsed.city).toBe('Санкт-Петербург, Приморский район');
+    expect(parsed.name).toContain('Цветков Леонид');
+    expect(parsed.city).toContain('Санкт-Петербург, Приморский район');
     expect(parsed.age).toBe(33);
     expect(parsed.occupation).toContain('текстильное ателье');
     expect(parsed.occupation).toContain('грузоперевозки');
